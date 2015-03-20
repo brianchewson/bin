@@ -1,0 +1,93 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to get all the loops that match on a keyword and open them in firefox, to kill in the queue or alter the configs (but there is another script to automate that)
+-----------------------------------------------------------------------bch
+USAGE: $0 -g [WORD]
+  -g     #represents the word you want to look for, ie win64, moving, dev
+"
+  echo $*
+  exit 1
+}
+
+get_all_job_names()
+{
+  for CONFIG in ${JENKINS_HOME}/jobs/*/config.xml; do
+    CONFIG=${CONFIG%/config.xml}
+    CONFIG=${CONFIG##*/}
+    echo "${CONFIG}">>${OUT_FILE}
+  done
+}
+
+get_all_jobs_which_match_our_criteria()
+{
+  for GREP_WORD in ${GREP_LIST}; do
+    grep -- ${GREP_WORD} ${OUT_FILE} > ${TMP_FILE}
+    if [ "$(wc -l < ${TMP_FILE})" -eq 0 ]; then
+      echo "${GREP_WORD} results in 0 results. Skipping"
+    else
+      mv ${TMP_FILE} ${OUT_FILE}
+    fi
+  done
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -g|-G)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for WORD flag (-g)"
+        fi
+        GREP_LIST="${GREP_LIST} $2"
+        shift
+      ;;
+    esac
+    shift
+  done
+  if [ -z "$GREP_LIST" ]; then
+    usage "No WORD specified"
+  fi
+}
+#==========================================END FUNCTIONS============================================
+
+DATE=$(date +%s)
+FIRST_JOB=TRUE
+GREP_LIST=""
+OUT_FILE=${DATE}.out
+TMP_FILE=${DATE}.tmp
+JENKINS_URL=http://starci.lebanon.cd-adapco.com:9090
+
+if [ -z "${JENKINS_HOME}" ]; then
+  HUDSON_MNT=/home/hudson/cfg/default
+  STARCI_MNT=/home/starci-jenkins/cfg/default
+  if [ -d "${HUDSON_MNT}" ]; then
+    JENKINS_HOME=${HUDSON_MNT}
+  elif [ -d "${STARCI_MNT}" ]; then
+    JENKINS_HOME=${STARCI_MNT}
+  else
+    usage "No Home for Hudson found"
+  fi
+fi
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
+
+process_arguments "$@"
+
+get_all_job_names
+get_all_jobs_which_match_our_criteria
+#TODO: create a section which removes other words (a grep -v section)a
+firefox -new-window about:newTab
+sleep 1 
+while read JOB; do
+    firefox ${JENKINS_URL}/job/${JOB}
+done < ${OUT_FILE}
+
+rm -f ${OUT_FILE} ${TMP_FILE}
