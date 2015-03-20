@@ -1,50 +1,84 @@
-#!/bin/bash
+#!/bin/sh -e
 
+#============================================FUNCTIONS==============================================
 usage()
 {
-   echo "usage: $0 FILE_NAME
-   takes the specified file and converts the xml into a newline separated list of module.suite combinations
-   "
+  echo "$0 is a tool to convert an xml config file into a newline separated list of module.suites
+-----------------------------------------------------------------------bch
+USAGE: $0 -i FILENAME [-o FILENAME]
+  -i     #Specifies the file to convert
+  -o     #OPTIONAL: specify the output filename, default is to replace xml extension with .converted 
+"
+  echo $*
+  exit 1
 }
 
-if [ "$#" -lt "1" ]; then
-   usage
-   exit
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -i|-I)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for Input File flag (-i)"
+        fi
+        INFILE=$2
+        shift
+      ;;
+      -o|-O)
+        if [ -z "$2" ]; then 
+          usage "Improper number of arguments supplied for Output File flag (-o)"
+        fi
+        OUTFILE=$2
+        shift
+      ;;
+    esac
+    shift
+  done
+  if [ -z "$INFILE" ]; then
+    usage "No FILENAME specified"
+  fi
+  if [ ! -f "$INFILE" ]; then
+    usage "File $INFILE doesn't exist"
+  fi
+  if [ -z "${OUTFILE}" ]; then
+    OUTFILE=${INFILE%.xml}.converted
+  fi
+  if [ -f "${OUTFILE}" ]; then
+    usage "file already exists at ${OUTFILE}, please (re)move before preceeding."
+  fi
+}
+#==========================================END FUNCTIONS============================================
+
+INFILE=""
+OUTFILE=""
+TEMP_FILE=""
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
 fi
 
-MASTER=$1
+process_arguments "$@"
 
-if [ ! -f "$MASTER" ]; then
-   echo "$0: cannot access $1: No such file"
-   usage
-   exit 1
-fi
+TEMP_FILE=${OUTFILE}.t
 
-CONVERTED=${MASTER}.converted
-TEMP=${CONVERTED}.t
+cp ${INFILE} ${OUTFILE}
 
-if [ -f $CONVERTED ]; then
-   echo "file already exists at $CONVERTED, please (re)move before preceeding."
-   exit 1
-fi
+sed -i 's/\.class/\n/g' ${OUTFILE}
+sed -i 's/\//./g' ${OUTFILE}
+sed -i 's/\\/./g' ${OUTFILE}
+sed -i 's/,//g' ${OUTFILE}
 
-cp $MASTER $CONVERTED
+grep Test ${OUTFILE}>${TEMP_FILE}
+\mv ${TEMP_FILE} ${OUTFILE}
 
-sed -i 's/\.class/\n/g' $CONVERTED
-sed -i 's/\//./g' $CONVERTED
-sed -i 's/\\/./g' $CONVERTED
-sed -i 's/,//g' $CONVERTED
+while read TEST_NAME; do
+   echo ${TEST_NAME##*\"}>>${TEMP_FILE}
+done<${OUTFILE}
+\mv ${TEMP_FILE} ${OUTFILE}
 
-grep Test $CONVERTED>$TEMP
-\mv $TEMP $CONVERTED
-
-while read TEST_NAME
-do
-   echo ${TEST_NAME##*\"}>>$TEMP
-done<$CONVERTED
-
-\mv $TEMP $CONVERTED
-
-
-sort $CONVERTED | uniq >> t.t
-mv t.t $CONVERTED
+sort ${OUTFILE} | uniq >> ${TEMP_FILE}
+mv ${TEMP_FILE} ${OUTFILE}
