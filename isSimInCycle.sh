@@ -24,47 +24,49 @@ get_a_list_of_sim_files()
   done
 }
 
+get_summary()
+{
+  BRANCH=$1
+  NPS=$2
+
+  if [ "${BRANCH}" = "DEV" ]; then
+    MAJOR_GREP="grep -v _[01][02468]_ ${SIMLIST}"
+  else
+    MAJOR_GREP="grep _[01][02468]_ ${SIMLIST}"  
+  fi
+
+  if [ "${NPS}" = "SERIAL" ]; then
+    NP_GREP="grep np" #remember here that serial startest finds parallel sims
+  else
+    NP_GREP="grep -v np"
+  fi
+
+  for CYCLE in 0 1 2 3 4; do
+  PLUS_FIVE=CYCLE
+  let PLUS_FIVE+=5
+  if [ $(${MAJOR_GREP}|${NP_GREP}|grep -c "_0[0-9][${CYCLE}${PLUS_FIVE}].sim" ) -ge 1 ]; then
+      echo -n "${CYCLE} "
+    fi
+  done
+}
+
 print_out_summary()
 {
   echo -n "${MODULE}.${SUITE}
 ----------------------------------------------
 DEV:
   SERIAL BKWD (NP SIMS): "
-  for CYCLE in 0 1 2 3 4; do
-    PLUS_FIVE=CYCLE
-    let PLUS_FIVE+=5
-    if [ $(grep -v '\.[01][02468]\.' ${SIMLIST} | grep np | grep -c "_0[0-9][${CYCLE}${PLUS_FIVE}].sim" ) -ge 1 ]; then
-      echo -n "${CYCLE} "
-    fi
-  done
-
+  get_summary DEV SERIAL
   echo -n "
   PARALLEL BACKWARD    : "
-  for CYCLE in 0 1 2 3 4; do
-    PLUS_FIVE=CYCLE
-    let PLUS_FIVE+=5
-    if [ $(grep -v '\.[01][02468]\.' ${SIMLIST} | grep -v np | grep -c "_0[0-9][${CYCLE}${PLUS_FIVE}].sim" ) -ge 1 ]; then
-      echo -n "${CYCLE} "
-    fi
-  done
-
+  get_summary DEV PARALLEL
   echo -n "
 REL:
   SERIAL BKWD (NP SIMS): "
-  if [ $(grep '\.[01][02468]\.' ${SIMLIST} | grep -c np ) -ge 1 ]; then
-    echo -n "PRESENT"
-  else
-    echo -n "NONE"
-  fi
-
+  get_summary REL SERIAL
   echo -n "
   PARALLEL BACKWARD    : "
-  if [ $(grep '\.[01][02468]\.' ${SIMLIST} | grep -v np | wc -l ) -ge 1 ]; then
-    echo -n "PRESENT"
-  else
-    echo -n "NONE"
-  fi
-
+  get_summary REL  PARALLEL
   echo ""
 }
 
@@ -82,6 +84,7 @@ process_arguments()
         SUITE=$2
         shift
       ;;
+
       -d|-D)
         ARCHIVE_LIST=${ARCHIVE_LIST/release/}
         ARCHIVE_LIST=${ARCHIVE_LIST// /}
@@ -130,3 +133,4 @@ get_a_list_of_sim_files
 print_out_summary
 
 rm -f ${SIMLIST}
+
