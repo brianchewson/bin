@@ -1,0 +1,69 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to backup my bin and test directories
+--------------------------------------------------------------------------
+USAGE: $0 
+       #I don't take any arguments
+"
+  echo $*
+  exit 1
+}
+
+back_it_up()
+{
+  for ITEM in ${COPY_LIST}; do
+    echo "Making 7z for ${ITEM}"
+    7za a ${BACKUP_DIR}/${DATE}/${ITEM}.7z ~/${ITEM} > ${BACKUP_DIR}/${DATE}/${ITEM}.log
+  done
+}
+
+create_backup_loc()
+{
+  if [ ! -d ${BACKUP_DIR}/${DATE} ]; then
+    echo "Making dir ${BACKUP_DIR}/${DATE}"
+    mkdir -p ${BACKUP_DIR}/${DATE}
+  fi
+}
+
+remove_old_backups()
+{
+  if [ $(ls -1t ${BACKUP_DIR} | wc -l ) -gt ${NUMBER_TO_KEEP} ]; then
+    ls -1tr ${BACKUP_DIR} | head -n -${NUMBER_TO_KEEP} | while read BACKUP_NUMBER; do
+      echo "Deleting Backup ${BACKUP_NUMBER}"
+      rm -rf ${BACKUP_DIR}/${BACKUP_NUMBER}
+    done
+  fi
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+    esac
+    shift
+  done
+}
+#==========================================END FUNCTIONS============================================
+BACKUP_DIR=/home/brianh/.backup
+DATE=$(date +%s)
+
+COPY_LIST="bin test"
+
+NUMBER_TO_KEEP=5
+
+
+#if [ $# -lt 1 ]; then
+#  usage "No arguments specified"
+#fi
+
+process_arguments "$@"
+create_backup_loc
+back_it_up
+remove_old_backups
+
