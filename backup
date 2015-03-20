@@ -17,6 +17,7 @@ back_it_up()
   for ITEM in ${COPY_LIST}; do
     echo "Making 7z for ${ITEM}"
     7za a ${BACKUP_DIR}/${DATE}/${ITEM}.7z ~/${ITEM} > ${BACKUP_DIR}/${DATE}/${ITEM}.log
+    du -sh ${BACKUP_DIR}/${DATE}/${ITEM}.7z
   done
 }
 
