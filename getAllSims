@@ -1,0 +1,95 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to grab all of the sim files of a module and/or suite 
+--------------------------------------------------------------------------
+USAGE: $0 -b BRANCH [ -m MODULE -a SUITE ] 
+  -a     # this is the name of the SUITE that you wish to get, can be used alone
+  -b     # the branch where you would like to get the files from (Release/Development)
+  -m     # this is the name of the MODULE you wish to get, can be used alone 
+"
+  echo $*
+  exit 1
+}
+
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -a|-A)
+        SUITE=$2
+        shift
+      ;;
+      -b|-B)
+        case $2 in
+          [dD][eE][vV]|[dD][eE][vV][eE][lL][oO][pP][mM][eE][nN][tT])
+            BRANCH=development
+          ;;
+          [rR][eE][lL]|[rR][eE][lL][eE][aA][sS][eE])
+            BRANCH=release
+          ;;
+          *)
+            usage "$2 is not a known branch. Valid branches are Release and Development"
+          ;;
+        esac
+        shift
+      ;;
+      -h|--help)
+        usage
+      ;;
+      -m|-M)
+        MODULE=$2
+        shift
+      ;;
+    esac
+    shift
+  done
+  if [ -z "$BRANCH" ]; then
+    usage "No BRANCH has been specified. Valid branches are Release and Development"
+  fi
+  if [ -z "$SUITE" ]; then  
+    SUITE=*
+    echo "No Suite specified, setting to all suites in the module"
+  fi
+  if [ -z "$MODULE" ]; then
+    MODULE=*
+    echo "No Module specified, setting to all modules which contain the suite"
+  fi
+  if [ "$MODULE" = "*" -a "$SUITE" = "*" ]; then
+    usage "You must specify either a module or a suite, I cannot duplicate the entire archive, it would be several TB"
+  fi
+}
+#==========================================END FUNCTIONS============================================
+
+BRANCH=""
+MODULE=""
+SUITE=""
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
+
+process_arguments "$@"
+
+TESTDATA=/home/testdata/${BRANCH}
+
+#NEED to figure out how to validate the folders on the branch?
+#check if at least one folder with that name exists
+#if [ "$SUITE" = "*" ]; then
+# validate_module ${MODULE}
+#elif [ "$MODULE" = "*" ]; then
+#  validate_module 
+#else 
+#  validate_module
+#fi
+
+
+for SIM_FILE in ${TESTDATA}/*/${MODULE}/${SUITE}/*/*/*.sim; do
+  SIM_FOLDER=${SIM_FILE#${TESTDATA}/}
+  SIM_FOLDER=${SIM_FOLDER%/*}
+  mkdir -p ~/reproducing/${SIM_FOLDER}
+  cp $SIM_FILE ~/reproducing/${SIM_FOLDER}
+done
