@@ -1,0 +1,144 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to copy the jenkins built version of startest from the nightly build to your local environment
+--------------------------------------------------------------------------
+USAGE: $0 -t PATH -s PATH [-c -d -b BRANCH -z]
+  -c     #clean up any previously derived data ie old test results (default is to keep)
+  -d     #destroy the specified location (default is to keep)
+  -s     #star home, a valid build of star
+  -t     #this would be the path to your old startest location (eg ~/dev/startest)
+  -b     #stream rel or dev, this flag is only required if the stream can't be determined from the path
+  -z     #don't load the database
+"
+  echo $*
+  exit 1
+}
+
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -b|-B)
+      if [ -z "$2" ]; then
+        usage "Improper number of arguments supplied for stream flag (-b)"
+      fi
+      case ${2} in
+        *dev*)
+          STREAM=dev
+        ;;
+        *rel*)
+          STREAM=rel
+        ;;
+      esac  
+      ;;
+      -c|-C)
+        CLEAN=true
+      ;;
+      -d|-D)
+        DESTROY=true
+      ;;
+      -s|-S|-[sS][tT][aA][rR][hH][oO][mM][eE])
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for starhome flag (-s)"
+        fi
+        STAR_HOME=$2
+      ;;
+      -t|-T)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for path flag (-T)"
+        fi
+        STARTEST_HOME=$2
+          if [ -z "${STREAM}" ]; then
+            case ${STARTEST_HOME} in
+              *dev*)
+                STREAM=dev
+              ;;
+              *rel*)
+                STREAM=rel
+              ;;
+            esac
+          fi
+        shift
+      ;;
+      -z|-Z)
+        LOAD_DATABASE=false
+      ;;
+    esac
+    shift
+  done
+  if [ -z "$STARTEST_HOME" ]; then
+    usage "NO Startest dir specified"
+  fi
+  if [ -z "${STAR_HOME}" ]; then
+    usage "No Star home dir specified"
+  fi
+  if [ "${DESTROY}" = false ]; then
+    if [ ! -d "${STARTEST_HOME}/.git" ]; then  #take out this requirement or allow a new flag?
+      usage "${STARTEST_HOME} is not a git repo"
+    fi
+  fi
+  if [ ! -f "${STAR_HOME}/star/bin/starccm+" ]; then
+    usage "Can't find a valid executable at ${STAR_HOME}/star/bin/starccm+"
+  fi
+  if [ -z "${STREAM}" ]; then
+    usage "No stream specified, valid values are dev and rel, please use the -b flag to specify"
+  fi
+}
+#==========================================END FUNCTIONS============================================
+
+CLEAN=false
+DESTROY=false
+JENKINS_URL=http://starci.lebanon.cd-adapco.com:9090
+LOAD_DATABASE=true
+SEVEN_Z=startest.7z
+SEVEN_Z_URL=${JENKINS_URL}/job/dev_make_startest/lastSuccessfulBuild/artifact/${SEVEN_Z}
+STAR_HOME=""
+STARTEST_HOME=""
+STREAM=""
+USER=$(whoami)
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
+
+process_arguments "$@"
+WORKSPACE=${STARTEST_HOME%/*}
+
+if [ "${CLEAN}" = "true" ]; then
+  echo "CLEANING OLD DATA"
+  cd ${WORKSPACE}
+  \rm -rf /tmp/star-"$USER"*
+  \rm -rf $WORKSPACE/startest/artifacts
+  \rm -rf $WORKSPACE/startest/results
+
+  cd ${STARTEST_HOME}
+  git checkout master
+  git pull
+fi
+
+if [ "${DESTROY}" = "true" ]; then
+  echo "DESTROYING OLD HOME"
+  cd ${WORKSPACE}
+  \rm -rf ${STARTEST_HOME}
+
+  git clone git@stash:ups/startest.git
+fi
+
+cd ${WORKSPACE}
+echo "FETCHING NEW 7z"
+curl -s -o ${SEVEN_Z} "${SEVEN_Z_URL}"
+echo "UNZIPPING 7z"
+7za x -y ${SEVEN_Z} > ${SEVEN_Z}.log
+
+if [ "${LOAD_DATABASE}" = "true" ]; then 
+  echo "LOADING DATABASE"
+  cd ${STARTEST_HOME}
+  make database STAR_HOME=${STAR_HOME}
+fi
