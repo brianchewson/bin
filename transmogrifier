@@ -1,0 +1,151 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to convert a file to/from the sim file archive path format
+--------------------------------------------------------------------------
+USAGE: $0 -f | -t FILENAME [-d FOLDER]
+  -d     # DESTINATION folder, if not specified, will deliver to ~/reproducing
+  -f     # FROM convert the full filename from the archive path format
+  -t     # TO   convert the indicated file to the archive path format, leaves a version folder in
+         # the specified directory
+"
+  echo $*
+  exit 1
+}
+
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -d|-D)
+        WORK_DIR=$2
+        shift
+      ;;
+      -f|-F)
+        DIRECTION="FROM"
+        FILENAME=$2
+        shift
+      ;;
+      -t|-T)
+        DIRECTION="TO"
+        FILENAME=$2
+        shift
+      ;;
+    esac
+    shift
+  done
+  if [ -z "$DIRECTION" ]; then
+    usage "No tranmogrification direction specified."
+  fi
+  if [ -z "$FILENAME" ]; then
+    usage "No file specified, please include a file"
+  fi
+  if [ ! -f "$FILENAME" ]; then
+    usage "File ${FILENAME} doesn't exist, please ensure that you have given the full path"
+  fi
+}
+#==========================================END FUNCTIONS============================================
+
+WORK_DIR=~/reproducing
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
+
+process_arguments "$@"
+
+case $DIRECTION in
+  FROM)
+    VER=${FILENAME##*/}
+
+    #broken up in this unusual pattern because we use the result of the previous text manipulation to feed the subsequent. An alternative would have been COMP ARCH then the rest of the COMP work...
+    COMP=${FILENAME%/*}
+    ARCH=${COMP%/*}
+    SUITE=${ARCH%/*}
+    MODULE=${SUITE%/*}
+
+    COMP=${COMP##*/}
+    ARCH=${ARCH##*/}
+    SUITE=${SUITE##*/}
+    MODULE=${MODULE##*/}
+
+    COMP=${COMP//./_}
+    ARCH=${ARCH//./_}
+
+    cp -v $FILENAME ${WORK_DIR}/${MODULE}_${SUITE}_${ARCH}_${COMP}_${VER}
+  ;;
+  TO)
+    VER=${FILENAME/${FILENAME%_*_*_*}/}
+    VER=${VER#_}
+    VER=${VER%.sim}
+
+    MODULE=${FILENAME%%_*}
+    
+    #check for gnu compiler, otherwise treat as an intel
+    COMP=${FILENAME/_${VER}.sim}
+    case ${COMP#${MODULE}_} in
+      *_gnu*)
+        COMP=gnu${COMP#*_gnu}
+      ;;
+      *_int*)
+        COMP=intel${COMP#*_intel}
+      ;;
+      *)
+        usage "${FILENAME} has an unknown COMPILER in the TO convert section"
+      ;;
+    esac
+
+    ARCH=${FILENAME/_${COMP}_${VER}.sim}
+    case ${ARCH#${MODULE}_} in
+      *_aix*)
+        ARCH=aix${ARCH#*_aix}
+      ;;
+      *_hpu*)
+        ARCH=hpu${ARCH#*_hpu}
+      ;;
+      *_lin*)
+        ARCH=lin${ARCH#*_lin}
+      ;;
+      *_sun*)
+        ARCH=sun${ARCH#*_sun}
+      ;;
+      *_win*)
+        ARCH=win${ARCH#*_win}
+      ;;
+      *)
+        usage "${FILENAME} has an unknown ARCHITECTURE in the TO convert section"
+      ;;
+    esac 
+
+    #since suites can contain underscores it was easier to obtain all of the other pieces and then
+    #determine the suite by removing all of the other pieces from the file name
+    SUITE=${FILENAME%_${ARCH}_${COMP}_${VER}.sim}
+    SUITE=${SUITE#${MODULE}_}
+
+    #reform Arch to contain . instead of _
+    case ${ARCH} in
+      *86_64*)
+         BACK_HALF=${ARCH##*-}
+         ARCH=${ARCH%-*}-${BACK_HALF//_/.}
+      ;;
+      *)
+        ARCH=${ARCH//_/.}
+      ;;
+    esac
+    #reform COMP to contain . instead of _
+    COMP=${COMP//_/.}
+    
+    DEST_DIR=${WORK_DIR}/${VER//_/.}/${MODULE}/${SUITE}/${ARCH}/${COMP}
+    mkdir -p ${DEST_DIR}/
+    cp -v ${FILENAME} ${DEST_DIR}/${VER}.sim
+  ;;
+  *)
+    echo "Something is broken in the assignment for transmogrification direction"
+  ;;
+esac
