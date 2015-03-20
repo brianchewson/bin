@@ -1,0 +1,107 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to search a directory looking for shell scripts and print out their help
+documentation. Default will show ONLY the specified directory and will show all matches 
+--------------------------------------------------------------------------
+USAGE: $0 -r -d -p PATH
+  -d     #DOCUMENTATION will only find those executables which have a help doc
+  -p     #PATH containing the script files you'd like to see
+  -r     #RECURSE subdirectories, will search all folders in a given path
+"
+  echo $*
+  exit 1
+}
+
+help_documentation_value()
+{
+  FILE_IN=$1
+  RET_VAL="NO_HELP"
+  if [ $(grep -c -- '--help' ${FILE_IN}) -gt 0 ]; then
+    RET_VAL="HELP"
+  fi
+  echo "${RET_VAL}"
+}
+
+print_message()
+{
+  HELP_STATUS=$1
+  MESSAGE=$2
+  if [ "${HELP_STATUS}" = "HELP" ] || [ "${DOCUMENTATION_ONLY}" = false ]; then
+    echo "${MESSAGE}"
+    echo ""
+  fi
+}
+
+recursive_look()
+{
+  WORK_DIR=$1
+  
+  for DIR_A in $WORK_DIR/*; do
+    if [ -d ${DIR_A} ]; then
+      if [ "${RECURSE}" = true ]; then
+        recursive_look ${DIR_A}
+      fi
+    elif [ -f ${DIR_A} ]; then
+      FILE_A=${DIR_A}
+      FILE_TYPE=$(file ${FILE_A})
+      FILE_MESSAGE=${FILE_TYPE}
+      case ${FILE_TYPE} in
+        *shell*executable*)
+          HELP_DOCN=$(help_documentation_value ${FILE_A})
+          if [ "${HELP_DOCN}" = HELP ]; then
+            FILE_MESSAGE="$(${FILE_A} --help)"||true
+          fi
+        ;;
+        *)
+          HELP_DOCN=NO_HELP
+        ;;
+      esac
+      print_message ${HELP_DOCN} "${FILE_MESSAGE}"
+    fi
+  done
+
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -d|-D)
+        DOCUMENTATION_ONLY=true
+      ;;
+      -p|-P)
+        if [ -z "$2" ]; then
+          usage "No directory supplied for PATH argument (-p)"
+        fi
+        START_DIR=$2
+        shift
+      ;;
+      -r|-R)
+        RECURSE=true
+      ;;
+    esac
+    shift
+  done
+  if [ ! -d "$START_DIR" ]; then
+    usage "DIR $START_DIR doesn't exist"
+  fi
+}
+#==========================================END FUNCTIONS============================================
+
+RECURSE=false
+DOCUMENTATION_ONLY=false
+START_DIR="$(pwd)"
+
+if [ $# -lt 1 ]; then
+ echo "No arguments specified, Default: Recurse OFF, Show only files with help option ON, search $START_DIR"
+else
+  process_arguments "$@"
+fi
+
+recursive_look ${START_DIR}
