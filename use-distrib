@@ -3,15 +3,15 @@
 #============================================FUNCTIONS==============================================
 usage()
 {
-  echo "$0 is a tool to copy the jenkins built version of startest from the nightly build to your local environment
+  echo "$0 is a tool to copy the jenkins built version of startest distrib from the nightly build to your local environment
 --------------------------------------------------------------------------
-USAGE: $0 -t PATH -s PATH [-c -d -b BRANCH -z]
-  -c     #clean up any previously derived data ie old test results (default is to keep)
-  -d     #destroy the specified location (default is to keep)
+USAGE: $0 -t PATH -s PATH [-k -b BRANCH -v VERSION -l]
+  -b     #stream rel or dev, this flag is only required if the stream can't be determined from the path
+  -k     #keep any old test results (default is to destroy)
+  -l     #load the database
   -s     #star home, a valid build of star
   -t     #this would be the path to your old startest location (eg ~/dev/startest)
-  -b     #stream rel or dev, this flag is only required if the stream can't be determined from the path
-  -z     #don't load the database
+  -v     #specify the version to obtain (if unspecfied, a version number will attempt to be found)
 "
   echo $*
   exit 1
@@ -38,11 +38,11 @@ process_arguments()
         ;;
       esac  
       ;;
-      -c|-C)
-        CLEAN=true
+      -k|-K)
+        KEEP_RESULTS=true
       ;;
-      -d|-D)
-        DESTROY=true
+      -l|-L)
+        LOAD_DATABASE=true
       ;;
       -s|-S|-[sS][tT][aA][rR][hH][oO][mM][eE])
         if [ -z "$2" ]; then
@@ -67,8 +67,19 @@ process_arguments()
           fi
         shift
       ;;
-      -z|-Z)
-        LOAD_DATABASE=false
+      -v|-V)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for Version flag (-v)"
+        fi
+        case $2 in
+          [0-9].0[1-6].[01][0-9][0-9]|[0-9][0-9].0[1-6].[01][0-9][0-9])
+            VERSION=$2
+          ;;
+          *)
+            usage "Version number supplied is not of the correct format XX.YY.ZZZ"
+          ;;
+        esac
+        shift
       ;;
     esac
     shift
@@ -79,30 +90,38 @@ process_arguments()
   if [ -z "${STAR_HOME}" ]; then
     usage "No Star home dir specified"
   fi
-  if [ "${DESTROY}" = false ]; then
-    if [ ! -d "${STARTEST_HOME}/.git" ]; then  #take out this requirement or allow a new flag?
-      usage "${STARTEST_HOME} is not a git repo"
-    fi
-  fi
   if [ ! -f "${STAR_HOME}/star/bin/starccm+" ]; then
     usage "Can't find a valid executable at ${STAR_HOME}/star/bin/starccm+"
   fi
   if [ -z "${STREAM}" ]; then
-    usage "No stream specified, valid values are dev and rel, please use the -b flag to specify"
+    usage "No stream specified, valid values are dev and rel, please use the -s flag to specify"
   fi
 }
 #==========================================END FUNCTIONS============================================
 
-CLEAN=false
-DESTROY=false
+DATE=$(date +%s)
+KEEP_RESULTS=false
+if [ -z "${JENKINS_HOME}" ]; then
+  HUDSON_MNT=/home/hudson/cfg/default
+  STARCI_MNT=/homd/starci-jenkins/cfg/default
+  if [ -d "${HUDSON_MNT}" ]; then
+    JENKINS_HOME=${HUDSON_MNT}
+  elif [ -d "${STARCI_MNT}" ]; then
+    JENKINS_HOME=${STARCI_MNT}
+  else
+    usage "No Home for Hudson found"
+  fi
+fi
 JENKINS_URL=http://starci.lebanon.cd-adapco.com:9090
-LOAD_DATABASE=true
-SEVEN_Z=startest.7z
-SEVEN_Z_URL=${JENKINS_URL}/job/dev_make_startest/lastSuccessfulBuild/artifact/${SEVEN_Z}
+LOAD_DATABASE=false
+SAVED_RESULTS=startest-results-${DATE}.7z
+SEVEN_Z=STAR-Test
+SEVEN_Z_URL=${JENKINS_URL}/job/STREAM_make_startest_distrib/lastSuccessfulBuild/artifact
 STAR_HOME=""
 STARTEST_HOME=""
 STREAM=""
 USER=$(whoami)
+VERSION=""
 
 if [ $# -lt 1 ]; then
   usage "No arguments specified"
@@ -111,31 +130,57 @@ fi
 process_arguments "$@"
 WORKSPACE=${STARTEST_HOME%/*}
 
-if [ "${CLEAN}" = "true" ]; then
-  echo "CLEANING OLD DATA"
+if [ "${KEEP_RESULTS}" = "true" ]; then
+  echo "KEEPING OLD DATA"
   cd ${WORKSPACE}
-  \rm -rf /tmp/star-"$USER"*
-  \rm -rf $WORKSPACE/startest/artifacts
-  \rm -rf $WORKSPACE/startest/results
-
-  cd ${STARTEST_HOME}
-  git checkout master
-  git pull
+  7za a ${WORKSPACE}/${SAVED_RESULTS} ${WORKSPACE}/startest/results
+  mv ${WORKSPACE}/${SAVED_RESULTS} /tmp/${SAVED_RESULTS}
 fi
 
-if [ "${DESTROY}" = "true" ]; then
-  echo "DESTROYING OLD HOME"
-  cd ${WORKSPACE}
-  \rm -rf ${STARTEST_HOME}
+echo "CLEARING OLD WORKSPACE"
+\rm -rfv /tmp/star-"${USER}"*
+cd ${WORKSPACE}
+\rm -rfv *
 
-  git clone git@stash:ups/startest.git
+if [ -z "${VERSION}" ]; then
+  #find the version number in the valid star installation? (Risky)
+  if [ -n "${STAR_HOME}" ]; then
+    VERSION=${STAR_HOME##*+}
+  fi
+fi
+
+if [ -z "${VERSION}" ]; then
+  echo "FINDING NEW VERSION"
+  #fetch the value from last build of dev_trigger via Jenkins
+  VERSION=$(curl -s ${JENKINS_URL}/job/${STREAM}_TRIGGER/lastSuccessfulBuild/artifact/version.properties/*view*/ | grep '^VERSION='| cut -d '=' -f 2)
+fi
+
+if [ -z "${VERSION}" ]; then
+  echo "FINDING NEW VERSION"
+  #fetch the value from last build of dev_trigger via filesystem
+  VERSION=$(grep '^VERSION=' ${JENKINS_HOME}/jobs/${STREAM}_TRIGGER/lastSuccessful/archive/version.properties | cut -d '=' -f 2)
+fi
+
+if [ -z "${VERSION}" ]; then
+  echo "FINDING NEW VERSION"
+  #fetch the value from the last build of dev_make_startest_distrib (isn't necessarily best)
+  VERSION=$(version -s "${JENKINS_URL}/job/${STREAM}_make_startest_distrib/lastBuild/api/xml?tree=actions\[parameters\[name,value\]\]" | tr '<' '\n' | grep -v ^/ | grep "^name>VERSION$" -A 1 | tail -1 | cut -d '>' -f 2)
+fi
+
+if [ -z "${VERSION}" ]; then
+  usage "No Version supplied, cannot find VERSION"
+else
+  SEVEN_Z="${SEVEN_Z}${VERSION}.7z"
+  SEVEN_Z_URL=${SEVEN_Z_URL/STREAM/${STREAM}}/${SEVEN_Z}
 fi
 
 cd ${WORKSPACE}
-echo "FETCHING NEW 7z"
+echo "FETCHING NEW 7z, ${SEVEN_Z}"
 curl -s -o ${SEVEN_Z} "${SEVEN_Z_URL}"
 echo "UNZIPPING 7z"
 7za x -y ${SEVEN_Z} > ${SEVEN_Z}.log
+echo "MOVING STARTEST"
+mv ${SEVEN_Z%.7z}/* ${WORKSPACE}
 
 if [ "${LOAD_DATABASE}" = "true" ]; then 
   echo "LOADING DATABASE"
