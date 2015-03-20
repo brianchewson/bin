@@ -1,0 +1,115 @@
+#!/bin/bash 
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to get a piece of information from Jenkins slaves
+WARNING: MAKE SURE TO WRAP YOUR ACTION/LABEL IN SINGLE QUOTES
+--------------------------------------------------------------------------
+USAGE: $0 -a 'ACTION' -l 'LABEL'
+  -a     #defines the list of actions to perform on the remote host 
+  -l     #Use a label restriction, as in Jenkins (eg lin64&&test)
+"
+  echo $*
+  exit 1
+}
+
+get_all_slaves()
+{
+  SLAVE_LIST="$(curl -s "${JENKINS_URL}/computer/api/xml?tree=computer\[displayName\]" | tr '<' '\n' | grep ^displayName | cut -d '>' -f 2 | sort | tr '\n' ' ')"
+
+  #remove slaves ssh: Could not resolve hostname
+  SLAVE_LIST=${SLAVE_LIST/atom /}
+  SLAVE_LIST=${SLAVE_LIST/icr /}
+  
+  #remove slaves that can resolve but test password doesn't work
+  SLAVE_LIST=${SLAVE_LIST/getafix /}
+  SLAVE_LIST=${SLAVE_LIST/hyper /}
+  SLAVE_LIST=${SLAVE_LIST/keith /}
+  SLAVE_LIST=${SLAVE_LIST/linperf /}  
+  SLAVE_LIST=${SLAVE_LIST/marlin /}
+  SLAVE_LIST=${SLAVE_LIST/soraya /}
+
+  #remove slaves BrianH has no business being on 
+  SLAVE_LIST=${SLAVE_LIST/master /}     #no one should tinker with the master
+  SLAVE_LIST=${SLAVE_LIST/gowri_iron /} #gowri's personal machine
+  SLAVE_LIST=${SLAVE_LIST/pw-pc /}      #peter's personal machine
+
+  #remove servers
+  SLAVE_LIST=${SLAVE_LIST/austinsrv /}
+  SLAVE_LIST=${SLAVE_LIST/houstonsrv /}
+  SLAVE_LIST=${SLAVE_LIST/houstonsrv.old /}
+  SLAVE_LIST=${SLAVE_LIST/irvinesrv /}
+  SLAVE_LIST=${SLAVE_LIST/orlandosrv /}
+  SLAVE_LIST=${SLAVE_LIST/osaka01 /}
+  SLAVE_LIST=${SLAVE_LIST/rome /}
+  SLAVE_LIST=${SLAVE_LIST/seattlesrv /}
+  SLAVE_LIST=${SLAVE_LIST/statecollegesrv /}
+  SLAVE_LIST=${SLAVE_LIST/tulsasrv /}
+  SLAVE_LIST=${SLAVE_LIST/turin /}
+  SLAVE_LIST=${SLAVE_LIST/vm-jenkins-ny /}
+  SLAVE_LIST=${SLAVE_LIST/yokohama04 /}
+
+  #Jenkins has the name wrong
+  SLAVE_LIST=${SLAVE_LIST/win64builder02x/win64builder}
+}
+
+get_label_slaves()
+{
+  SLAVE_LIST="$(curl -s "${JENKINS_URL}/label/${LABEL}/api/xml?tree=nodes\[nodeName\]" | tr '<' '\n' | grep ^nodeName | cut -d '>' -f 2 | sort | tr '\n' ' ')"
+}
+
+ssh_as_test()
+{ 
+  echo "ACTION=${ACTION}"
+  for SLAVE in ${SLAVE_LIST}; do
+    echo -n "${SLAVE}: "
+    ssh test@${SLAVE} "${ACTION}"
+  done
+
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -a|-A)
+        ACTION=$2
+        shift
+      ;;
+      -l|-L)
+        LABEL=$2
+        ASK_ALL=false
+        shift
+      ;;
+    esac
+    shift
+  done
+  if [ -z "${ACTION}" ]; then
+    usage "NO ACTION specified"
+  fi
+  if [ ${ASK_ALL} = false ] && [ -z ${LABEL} ] ; then
+    usage "No label specified"
+  fi
+}
+#==========================================END FUNCTIONS============================================
+
+ACTION=""
+ASK_ALL=true
+JENKINS_URL="http://starci.lebanon.cd-adapco.com:9090"
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
+
+process_arguments "$@"
+
+if [ ${ASK_ALL} = true ]; then
+  get_all_slaves
+else
+  get_label_slaves
+fi
+ssh_as_test
