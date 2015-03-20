@@ -6,7 +6,7 @@ usage()
   echo "$0 is a tool to determine if a suite has sim files in rel/dev and which cycles
 --------------------------------------------------------------------------
 USAGE: $0 -m MODULE -a SUITE [-d|-r]
-  -a     #SUITE name
+  -a     #SUITE name (multiple suites should be separated by a tilde SUITE1~SUITE2)
   -d     #Look only in the dev archive (skip release)
   -m     #MODULE name
   -r     #Look only in the rel archive (skip development)
@@ -18,9 +18,10 @@ USAGE: $0 -m MODULE -a SUITE [-d|-r]
 get_a_list_of_sim_files()
 {
   for ARCHIVE in ${ARCHIVE_LIST}; do
-#    if [ -d ${DATA_DIR}/${ARCHIVE}/${MODULE}/${SUITE} ]; then
+    #if the glob expands, you can try to find stuff in it
+    if [ "$(echo ${DATA_DIR}/${ARCHIVE}/*/${MODULE}/${SUITE})" != "${DATA_DIR}/${ARCHIVE}/*/${MODULE}/${SUITE}" ]; then
       find ${DATA_DIR}/${ARCHIVE}/*/${MODULE}/${SUITE} -type f | grep sim$ >> $SIMLIST
-#    fi 
+    fi 
   done
 }
 
@@ -52,7 +53,7 @@ get_summary()
 
 print_out_summary()
 {
-  echo -n "${MODULE}.${SUITE}
+  echo -en "${MODULE}.${SUITE} - ${MODULE}\t${SUITE}
 ----------------------------------------------
 DEV:
   SERIAL BKWD (NP SIMS): "
@@ -67,7 +68,9 @@ REL:
   echo -n "
   PARALLEL BACKWARD    : "
   get_summary REL  PARALLEL
-  echo ""
+  echo "
+http://gitweb.lebanon.cd-adapco.com/?p=startest.git;a=history;f=${MODULE}/test/unit/src/${MODULE}/${SUITE}Test.java
+=============================================="
 }
 
 process_arguments()
@@ -81,10 +84,9 @@ process_arguments()
         if [ -z "$2" ]; then
           usage "Improper number of arguments supplied for Suite flag (-a)"
         fi
-        SUITE=$2
+        SUITE_LIST=${2//\~/ }
         shift
       ;;
-
       -d|-D)
         ARCHIVE_LIST=${ARCHIVE_LIST/release/}
         ARCHIVE_LIST=${ARCHIVE_LIST// /}
@@ -103,7 +105,7 @@ process_arguments()
     esac
     shift
   done
-  for DATA in MODULE SUITE; do
+  for DATA in MODULE SUITE_LIST; do
     if [ -z "${!DATA}" ]; then
       usage "NO ${DATA} specified"
     fi
@@ -127,10 +129,14 @@ fi
 
 process_arguments "$@"
 
-SIMLIST=${MODULE}.${SUITE}.$(date +%s)
+echo -e "${MODULE}\t${SUITE_LIST// /~}"
+for SUITE in $SUITE_LIST; do
+  SIMLIST=${MODULE}.${SUITE}.$(date +%s)
+  >$SIMLIST
 
-get_a_list_of_sim_files
-print_out_summary
+  get_a_list_of_sim_files
+  print_out_summary
 
-rm -f ${SIMLIST}
+  rm -f ${SIMLIST}
+done
 
