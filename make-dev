@@ -1,0 +1,115 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to
+--------------------------------------------------------------------------
+USAGE: $0 [ -s PATH -t PATH -u ] [ -r ] [ -d ] [ -w DATE ]
+  -d     #destroy the original git repos
+  -s     #path to star (git repo), defaults to ${STAR_HOME}
+  -t     #path to stratest (git repo), devaluts to ${STARTEST_HOME}
+  -u     #update the startest portion only, defaults to a full compile of star
+  -w     #wait until the listed date to execute the make, MM/DD/YYYY HH:MM format
+"
+  echo $*
+  exit 1
+}
+
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -d|-D)
+        DESTROY=true
+      ;;
+      -s|-S)
+        STAR_HOME=$2
+      ;;
+      -t|-T)
+        STARTEST_HOME=$2
+      ;;
+      -u|-U)
+        UPDATE=true
+      ;;
+      -w|-W)
+        CURRENT_TIME=$(date +%s)
+        if [ -z "$2" ]; then
+          DATE=$(date --date="1 day" +%m/%d/%Y)
+          TIME="06:00"
+        else
+          case "$2" in
+            */*/*)
+              DATE=$2
+              case "$3" in
+                *:*)
+                  TIME=$3
+                ;;
+                *)
+                  usage "Time must be in the 24 hour format \"HH:MM\". You requested $3"
+                ;;
+              esac
+            ;;
+            *)
+              usage "Date must be in \"MM/DD/YYYY\"  format. You requested $2"
+            ;;
+          esac
+        fi
+        START_TIME=$(date -d "$DATE $TIME" +%s)
+        DELAY=""
+        let DELAY=START_TIME-CURRENT_TIME
+        echo "waiting until $DATE $TIME to make-dev"
+        sleep ${DELAY}
+        shift
+        shift
+      ;;
+    esac
+    shift
+  done
+  if [ -z "$UPDATE" ]; then
+    usage "I don't know what to do, exiting"
+  fi
+  if [ ! -d "${STAR_HOME}/.git" ]; then
+    usage "Can't find a star directory (git repo) at ${STAR_HOME}/"
+  fi
+  if [ ! -d "${STARTEST_HOME}/.git" ]; then
+    usage "Can't find a startest directory (git repo) at ${STARTEST_HOME}/"
+  fi
+
+}
+#==========================================END FUNCTIONS============================================
+
+DESTROY=false
+STAR_HOME=~/dev/star
+STARTEST_HOME=~/dev/startest
+UPDATE=false
+
+#if [ $# -lt 1 ]; then
+#  usage "No arguments specified"
+#fi
+
+process_arguments "$@"
+
+if [ "${UPDATE}" = false ]; then
+  if [ "${DESTROY}" = true ]; then
+    cd ${STAR_HOME}/..
+    nukE star
+  fi
+  cd ${STAR_HOME}
+  git checkout master
+  git pull
+  make -j 4
+fi
+
+if [ "${DESTROY}" = true ]; then
+  cd ${STARTEST_HOME}/..
+  nukE startest
+fi
+cd ${STARTEST_HOME}
+git checkout master
+git pull
+make -j 6
