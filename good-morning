@@ -1,0 +1,87 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to set up your installations in the morning
+--------------------------------------------------------------------------
+USAGE: $0 -b [BRANCH]
+  -b     #BRANCH, options are dev and rel
+"
+  echo $*
+  exit 1
+}
+
+get_new_version()
+{
+  VERSION=$(curl -s "${JENKINS_URL}/job/${BRANCH}_trigger/lastBuild/artifact/version.properties/*view*" | grep ^VERSION= | cut -d '=' -f 2)
+  git archive --remote=git@stash:ups/top.git HEAD:include find_valid_install.sh | tar -x
+  STAR_HOME=$(./find_valid_install.sh -v ${VERSION} -p lin64)
+  rm -f find_valid_install.sh
+}
+
+start_one()
+{
+  ( make-dev & )
+}
+
+start_two()
+{
+  ( use-jenkins -d -s ${STAR_HOME} -t ~/dev2/startest & )
+}
+
+start_three()
+{
+  ( use-distrib -s ${STAR_HOME} -t ~/dev3/startest & )
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -b|-B)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for Branch flag (-b)"
+        fi
+        BRANCH=$2
+        case ${BRANCH} in
+          dev*)
+            BRANCH=dev
+          ;;
+          rel*)
+            BRANCH=rel
+          ;;
+          *)
+            usage "${BRANCH} is an unknown branch, please specify dev or rel"
+          ;;
+        esac
+        shift
+      ;;
+    esac
+    shift
+  done
+  if [ -z "$BRANCH" ]; then
+    usage "NO Branch specified"
+  fi
+}
+#==========================================END FUNCTIONS============================================
+
+BRANCH=""
+JENKINS_URL=http://starci.lebanon.cd-adapco.com:9090
+VERSION=""
+STAR_HOME=""
+
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
+
+process_arguments "$@"
+
+get_new_version
+#start_one
+#start_two
+#start_three
