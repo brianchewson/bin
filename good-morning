@@ -20,19 +20,23 @@ get_new_version()
   rm -f find_valid_install.sh
 }
 
-start_one()
+start_build()
 {
-  ( make-dev & )
+  case ${BRANCH} in
+    dev)
+      TOMORROW=$(date --date="tomorrow" +%m/%d/%y)
+      make-startest -d -w ${TOMORROW} 04:30
+    ;;
+    rel)
+      ( make-startest -r ${VERSION%.*} & )
+    ;;
+  esac  
 }
 
-start_two()
+start_distrib()
 {
-  ( use-jenkins -d -s ${STAR_HOME} -t ~/dev2/startest & )
-}
-
-start_three()
-{
-  ( use-distrib -s ${STAR_HOME} -t ~/dev3/startest & )
+  LOCAL_SPACE=$1
+  ( use-distrib -b ${BRANCH} -s ${STAR_HOME} -t ~/${BRANCH}${LOCAL_SPACE}/startest & )
 }
 
 process_arguments()
@@ -81,7 +85,16 @@ fi
 
 process_arguments "$@"
 
-get_new_version
-#start_one
-#start_two
-#start_three
+if [ ${BRANCH} = rel ]; then
+  get_new_version
+fi
+
+start_build
+
+if [ ${BRANCH} = dev ]; then
+  get_new_version
+fi
+
+for LOCAL in 2 3 4; do
+  start_distrib ${LOCAL}
+done
