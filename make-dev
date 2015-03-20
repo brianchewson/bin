@@ -5,10 +5,11 @@ usage()
 {
   echo "$0 is a tool to
 --------------------------------------------------------------------------
-USAGE: $0 [ -s PATH -t PATH -u ] [ -r ] [ -d ] [ -w DATE ]
+USAGE: $0 [ -s PATH -t PATH -u ] [ -r MAJOR.MINOR] [ -d ] [ -w DATE ]
   -d     #destroy the original git repos
+  -r     #make the release branch
   -s     #path to star (git repo), defaults to ${STAR_HOME}
-  -t     #path to stratest (git repo), devaluts to ${STARTEST_HOME}
+  -t     #path to startest (git repo), defaults to ${STARTEST_HOME}
   -u     #update the startest portion only, defaults to a full compile of star
   -w     #wait until the listed date to execute the make, MM/DD/YYYY HH:MM format
 "
@@ -26,6 +27,10 @@ process_arguments()
       ;;
       -d|-D)
         DESTROY=true
+      ;;
+      -r|-R)
+        RELEASE=$2
+        BRANCH=release
       ;;
       -s|-S)
         STAR_HOME=$2
@@ -62,7 +67,7 @@ process_arguments()
         START_TIME=$(date -d "$DATE $TIME" +%s)
         DELAY=""
         let DELAY=START_TIME-CURRENT_TIME
-        echo "waiting until $DATE $TIME to make-dev"
+        echo "waiting until $DATE $TIME to make-startest (${BRANCH:0:3})"
         sleep ${DELAY}
         shift
         shift
@@ -79,10 +84,22 @@ process_arguments()
   if [ ! -d "${STARTEST_HOME}/.git" ]; then
     usage "Can't find a startest directory (git repo) at ${STARTEST_HOME}/"
   fi
+  if [ $BRANCH = release ]; then
+    if [ -z "${RELEASE}" ]; then
+      usage "No Major.Minor value specified for release build"
+    fi
+    if [ $STAR_HOME = ~/dev/star ]; then
+      STAR_HOME=~/rel/star
+    fi
+    if [ $STARTEST_HOME = ~/dev/startest ]; then
+      STARTEST_HOME=~/rel/startest
+    fi
+  fi
 
 }
 #==========================================END FUNCTIONS============================================
 
+BRANCH=development
 DESTROY=false
 STAR_HOME=~/dev/star
 STARTEST_HOME=~/dev/startest
@@ -94,22 +111,36 @@ UPDATE=false
 
 process_arguments "$@"
 
+echo "STAR_HOME: ${STAR_HOME}
+STARTEST_HOME: ${STARTEST_HOME}"
+
 if [ "${UPDATE}" = false ]; then
   if [ "${DESTROY}" = true ]; then
+    echo "DESTROYING star"
     cd ${STAR_HOME}/..
     nukE star
   fi
+  echo "MAKING star"
   cd ${STAR_HOME}
   git checkout master
   git pull
-  make -j 4
+if [ $BRANCH = release ]; then
+  git checkout release/${RELEASE}
+fi
+  make -j 8
 fi
 
 if [ "${DESTROY}" = true ]; then
+  echo "DESTROYING startest"
   cd ${STARTEST_HOME}/..
   nukE startest
 fi
+
+echo "MAKING startest"
 cd ${STARTEST_HOME}
 git checkout master
 git pull
+if [ $BRANCH = release ]; then
+  git checkout release/${RELEASE}
+fi
 make -j 6
