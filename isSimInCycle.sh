@@ -5,9 +5,10 @@ usage()
 {
   echo "$0 is a tool to determine if a suite has sim files in rel/dev and which cycles
 --------------------------------------------------------------------------
-USAGE: $0 -m MODULE -a SUITE [-d|-r]
+USAGE: $0 -m MODULE -a SUITE [-d|-r] [-f]
   -a     #SUITE name (multiple suites should be separated by a tilde SUITE1~SUITE2)
   -d     #Look only in the dev archive (skip release)
+  -f     #display only the found files, default behavior is a summary
   -m     #MODULE name
   -r     #Look only in the rel archive (skip development)
 "
@@ -51,6 +52,11 @@ get_summary()
   done
 }
 
+print_out_file_list()
+{
+  cat ${SIMLIST}
+}
+
 print_out_summary()
 {
   echo -en "${MODULE}.${SUITE} - ${MODULE}\t${SUITE}
@@ -91,6 +97,9 @@ process_arguments()
         ARCHIVE_LIST=${ARCHIVE_LIST/release/}
         ARCHIVE_LIST=${ARCHIVE_LIST// /}
       ;;
+      -f|-F)
+        SHOW_MODE="file_list"
+      ;;
       -m|-M)
         if [ -z "$2" ]; then
           usage "Improper number of arguments supplied for Module flag (-m)"
@@ -118,6 +127,7 @@ process_arguments()
 
 MODULE=""
 SUITE=""
+SHOW_MODE="summary"
 
 DATA_DIR=/home/testdata
 
@@ -135,7 +145,7 @@ for SUITE in $SUITE_LIST; do
   >$SIMLIST
 
   get_a_list_of_sim_files
-  print_out_summary
+  print_out_${SHOW_MODE}
 
   rm -f ${SIMLIST}
 done
