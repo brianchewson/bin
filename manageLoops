@@ -5,8 +5,10 @@ usage()
 {
   echo "$0 is a tool to get all the loops that match on a keyword and open them in firefox, to kill in the queue or alter the configs (but there is another script to automate that)
 -----------------------------------------------------------------------bch
-USAGE: $0 -g [WORD]
+USAGE: $0 -g WORD -s 'PAGE'
   -g     #represents the word you want to look for, ie win64, moving, dev
+         # define multiple words with multiple -g arguments
+  -s     #specify a specific jenkins subpage (ie configure)
 "
   echo $*
   exit 1
@@ -26,7 +28,7 @@ get_all_jobs_which_match_our_criteria()
   for GREP_WORD in ${GREP_LIST}; do
     grep -- ${GREP_WORD} ${OUT_FILE} > ${TMP_FILE}
     if [ "$(wc -l < ${TMP_FILE})" -eq 0 ]; then
-      echo "${GREP_WORD} results in 0 results. Skipping"
+      echo "${GREP_WORD} results in 0 Jenkins Loops. Skipping"
     else
       mv ${TMP_FILE} ${OUT_FILE}
     fi
@@ -45,6 +47,13 @@ process_arguments()
           usage "Improper number of arguments supplied for WORD flag (-g)"
         fi
         GREP_LIST="${GREP_LIST} $2"
+        shift
+      ;;
+      -s|-S) 
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for SUBPAGE flag (-s)"
+        fi
+        SUBPAGE=$2
         shift
       ;;
     esac
@@ -87,7 +96,7 @@ get_all_jobs_which_match_our_criteria
 firefox -new-window about:newTab
 sleep 1 
 while read JOB; do
-    firefox ${JENKINS_URL}/job/${JOB}
+    firefox ${JENKINS_URL}/job/${JOB}/${SUBPAGE}
 done < ${OUT_FILE}
 
 rm -f ${OUT_FILE} ${TMP_FILE}
