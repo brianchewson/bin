@@ -12,9 +12,24 @@ USAGE: $0 -b [BRANCH]
   exit 1
 }
 
+check_version()
+{
+  TAG_VER="refs/tags/$1"
+  STAR_VER=$(git ls-remote ${STAR_GIT} ${TAG_VER})
+  STARTEST_VER=$(git ls-remote ${STARTEST_GIT} ${TAG_VER})
+
+  if [ -z "${STAR_VER}" ]; then
+    usage "Star git repo does not contain tag ${VERSION}"
+  elif [ -z "${STARTEST_VER}" ]; then
+    usage "Startest git repo does not contain tag ${VERSION}"
+  fi
+}
+
 get_new_version()
 {
   VERSION=$(curl -s "${JENKINS_URL}/job/${BRANCH}_trigger/lastBuild/artifact/version.properties/*view*" | grep ^VERSION= | cut -d '=' -f 2)
+
+  check_version ${VERSION}
   git archive --remote=git@stash:ups/top.git HEAD:include find_valid_install.sh | tar -x
   STAR_HOME=$(./find_valid_install.sh -v ${VERSION} -p lin64)
   rm -f find_valid_install.sh
@@ -77,6 +92,8 @@ BRANCH=""
 JENKINS_URL=http://starci.lebanon.cd-adapco.com:9090
 VERSION=""
 STAR_HOME=""
+STAR_GIT="git@stash:ups/star.git"
+STARTEST_GIT="git@stash:ups/startest.git"
 
 
 if [ $# -lt 1 ]; then

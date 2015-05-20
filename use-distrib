@@ -1,5 +1,5 @@
 #!/bin/sh -e
-
+SYSTEM=$(uname)
 #============================================FUNCTIONS==============================================
 usage()
 {
@@ -101,17 +101,21 @@ process_arguments()
 
 DATE=$(date +%s)
 KEEP_RESULTS=false
-if [ -z "${JENKINS_HOME}" ]; then
-  HUDSON_MNT=/home/hudson/cfg/default
-  STARCI_MNT=/homd/starci-jenkins/cfg/default
-  if [ -d "${HUDSON_MNT}" ]; then
-    JENKINS_HOME=${HUDSON_MNT}
-  elif [ -d "${STARCI_MNT}" ]; then
-    JENKINS_HOME=${STARCI_MNT}
-  else
-    usage "No Home for Hudson found"
-  fi
-fi
+case ${SYSTEM} in
+  Lin*)
+     if [ -z "${JENKINS_HOME}" ]; then
+       HUDSON_MNT=/home/hudson/cfg/default
+       STARCI_MNT=/home/starci-jenkins/cfg/default
+       if [ -d "${HUDSON_MNT}" ]; then
+         JENKINS_HOME=${HUDSON_MNT}
+       elif [ -d "${STARCI_MNT}" ]; then
+         JENKINS_HOME=${STARCI_MNT}
+       else
+         usage "No Home for Hudson found"
+      fi
+    fi
+  ;;
+esac
 JENKINS_URL=http://starci.lebanon.cd-adapco.com:9090
 LOAD_DATABASE=false
 SAVED_RESULTS=startest-results-${DATE}.7z
@@ -128,7 +132,7 @@ if [ $# -lt 1 ]; then
 fi
 
 process_arguments "$@"
-WORKSPACE=${STARTEST_HOME%/*}
+WORKSPACE=${STARTEST_HOME%/startest}
 
 if [ "${KEEP_RESULTS}" = "true" ]; then
   echo "KEEPING OLD DATA"
@@ -155,11 +159,15 @@ if [ -z "${VERSION}" ]; then
   VERSION=$(curl -s ${JENKINS_URL}/job/${STREAM}_TRIGGER/lastSuccessfulBuild/artifact/version.properties/*view*/ | grep '^VERSION='| cut -d '=' -f 2)
 fi
 
-if [ -z "${VERSION}" ]; then
-  echo "FINDING NEW VERSION"
-  #fetch the value from last build of dev_trigger via filesystem
-  VERSION=$(grep '^VERSION=' ${JENKINS_HOME}/jobs/${STREAM}_TRIGGER/lastSuccessful/archive/version.properties | cut -d '=' -f 2)
-fi
+case ${SYSTEM} in
+  Lin*)
+    if [ -z "${VERSION}" ]; then
+      echo "FINDING NEW VERSION"
+      #fetch the value from last build of dev_trigger via filesystem
+      VERSION=$(grep '^VERSION=' ${JENKINS_HOME}/jobs/${STREAM}_TRIGGER/lastSuccessful/archive/version.properties | cut -d '=' -f 2)
+    fi
+  ;;
+esac
 
 if [ -z "${VERSION}" ]; then
   echo "FINDING NEW VERSION"

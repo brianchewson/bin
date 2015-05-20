@@ -78,12 +78,6 @@ process_arguments()
   if [ -z "$UPDATE" ]; then
     usage "I don't know what to do, exiting"
   fi
-  if [ ! -d "${STAR_HOME}/.git" ]; then
-    usage "Can't find a star directory (git repo) at ${STAR_HOME}/"
-  fi
-  if [ ! -d "${STARTEST_HOME}/.git" ]; then
-    usage "Can't find a startest directory (git repo) at ${STARTEST_HOME}/"
-  fi
   if [ $BRANCH = release ]; then
     if [ -z "${RELEASE}" ]; then
       usage "No Major.Minor value specified for release build"
@@ -94,6 +88,12 @@ process_arguments()
     if [ $STARTEST_HOME = ~/dev/startest ]; then
       STARTEST_HOME=~/rel/startest
     fi
+  fi
+  if [ ! -d "${STAR_HOME}/.git" ]; then
+    usage "Can't find a star directory (git repo) at ${STAR_HOME}/"
+  fi
+  if [ ! -d "${STARTEST_HOME}/.git" ]; then
+    usage "Can't find a startest directory (git repo) at ${STARTEST_HOME}/"
   fi
 
 }
@@ -143,4 +143,4 @@ git pull
 if [ $BRANCH = release ]; then
   git checkout release/${RELEASE}
 fi
-make -j 6
+make 
