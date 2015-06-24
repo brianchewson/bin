@@ -6,9 +6,12 @@ usage()
   echo "$0 is a tool to get a piece of information from Jenkins slaves
 WARNING: MAKE SURE TO WRAP YOUR ACTION/LABEL IN SINGLE QUOTES
 --------------------------------------------------------------------------
-USAGE: $0 -a 'ACTION' -l 'LABEL'
+USAGE: $0 -a 'ACTION' -l 'LABEL' -j JENKINS_URL|-r|-d
   -a     #defines the list of actions to perform on the remote host 
+  -d     #use the development Jenkins (${DEV_URL})
+  -j     #specify the exact Jenkins URL
   -l     #Use a label restriction, as in Jenkins (eg lin64&&test)
+  -r     #use the release Jenkins (${REL_URL})
 "
   echo $*
   exit 1
@@ -80,10 +83,19 @@ process_arguments()
         ACTION=$2
         shift
       ;;
+      -d|-D)
+        JENKINS_URL=${DEV_URL}
+      ;;
+      -j|-J)
+        JENKINS_URL=$2
+      ;;
       -l|-L)
         LABEL=$2
         ASK_ALL=false
         shift
+      ;;
+      -r|-R)
+        JENKINS_URL=${REL_URL}
       ;;
     esac
     shift
@@ -94,12 +106,17 @@ process_arguments()
   if [ ${ASK_ALL} = false ] && [ -z ${LABEL} ] ; then
     usage "No label specified"
   fi
+  if [ -z "${JENKINS_URL}" ]; then
+    usage "No JENKINS instance specified"
+  fi
 }
 #==========================================END FUNCTIONS============================================
 
 ACTION=""
 ASK_ALL=true
-JENKINS_URL="http://starci.lebanon.cd-adapco.com:9090"
+DEV_URL="http://starci.lebanon.cd-adapco.com:9090"
+JENKINS_URL=""
+REL_URL="http://relci.lebanon.cd-adapco.com"
 
 if [ $# -lt 1 ]; then
   usage "No arguments specified"
