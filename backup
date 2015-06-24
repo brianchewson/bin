@@ -54,7 +54,7 @@ process_arguments()
 BACKUP_DIR=/home/brianh/.backup
 DATE=$(date +%s)
 
-COPY_LIST="bin test"
+COPY_LIST="bin test test2"
 
 NUMBER_TO_KEEP=5
 
