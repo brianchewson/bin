@@ -5,9 +5,14 @@ usage()
 {
   echo "$0 is a tool to get all the loops that match on a keyword and open them in firefox, to kill in the queue or alter the configs (but there is another script to automate that)
 -----------------------------------------------------------------------bch
-USAGE: $0 -g WORD -s 'PAGE' [-f|-c]
+USAGE: $0 -g WORD -s 'PAGE' [-f|-c] -j JENKINS_URL|-r|-d
+  -c     #use the chrome browser
+  -d     #use the development Jenkins (${DEV_URL})
+  -f     #use the firefox browser (default)
   -g     #represents the word you want to look for, ie win64, moving, dev
          # define multiple words with multiple -g arguments
+  -j     #specify the exact Jenkins URL
+  -r     #use the release Jenkins (${REL_URL})
   -s     #specify a specific jenkins subpage (ie configure)
 "
   echo $*
@@ -16,11 +21,7 @@ USAGE: $0 -g WORD -s 'PAGE' [-f|-c]
 
 get_all_job_names()
 {
-  for CONFIG in ${JENKINS_HOME}/jobs/*/config.xml; do
-    CONFIG=${CONFIG%/config.xml}
-    CONFIG=${CONFIG##*/}
-    echo "${CONFIG}">>${OUT_FILE}
-  done
+  curl -s "${JENKINS_URL}/api/xml?tree=jobs\[name\]" | tr '<' '\n' | grep ^name | cut -d '>' -f 2 > ${OUT_FILE}
 }
 
 get_all_jobs_which_match_our_criteria()
@@ -33,6 +34,8 @@ get_all_jobs_which_match_our_criteria()
       mv ${TMP_FILE} ${OUT_FILE}
     fi
   done
+
+  sort -u ${OUT_FILE} -o ${OUT_FILE}
 }
 
 process_arguments()
@@ -45,6 +48,9 @@ process_arguments()
       -c|-C)
         BROWSER=chrome
       ;;
+      -d|-D)
+        JENKINS_URL=${DEV_URL}
+      ;;
       -f|-F)
         BROWSER=firefox
       ;;
@@ -54,6 +60,12 @@ process_arguments()
         fi
         GREP_LIST="${GREP_LIST} $2"
         shift
+      ;;
+     -j|-J)
+        JENKINS_URL=$2
+      ;;
+      -r|-R)
+        JENKINS_URL=${REL_URL}
       ;;
       -s|-S) 
         if [ -z "$2" ]; then
@@ -68,28 +80,22 @@ process_arguments()
   if [ -z "$GREP_LIST" ]; then
     usage "No WORD specified"
   fi
+  if [ -z "${JENKINS_URL}" ]; then
+    usage "No JENKINS instance specified"
+  fi
+
 }
 #==========================================END FUNCTIONS============================================
 
+BROWSER="firefox"
 DATE=$(date +%s)
+DEV_URL="http://starci.lebanon.cd-adapco.com:9090"
 FIRST_JOB=TRUE
 GREP_LIST=""
+JENKINS_URL=""
 OUT_FILE=${DATE}.out
+REL_URL="http://relci.lebanon.cd-adapco.com"
 TMP_FILE=${DATE}.tmp
-JENKINS_URL=http://starci.lebanon.cd-adapco.com:9090
-BROWSER="firefox"
-
-if [ -z "${JENKINS_HOME}" ]; then
-  HUDSON_MNT=/home/hudson/cfg/default
-  STARCI_MNT=/home/starci-jenkins/cfg/default
-  if [ -d "${HUDSON_MNT}" ]; then
-    JENKINS_HOME=${HUDSON_MNT}
-  elif [ -d "${STARCI_MNT}" ]; then
-    JENKINS_HOME=${STARCI_MNT}
-  else
-    usage "No Home for Hudson found"
-  fi
-fi
 
 if [ $# -lt 1 ]; then
   usage "No arguments specified"
