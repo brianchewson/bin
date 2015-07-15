@@ -134,6 +134,10 @@ fi
 process_arguments "$@"
 WORKSPACE=${STARTEST_HOME%/startest}
 
+if [ "${STREAM}" = rel ]; then 
+  JENKINS_URL=http://relci.lebanon.cd-adapco.com
+fi
+
 if [ "${KEEP_RESULTS}" = "true" ]; then
   echo "KEEPING OLD DATA"
   cd ${WORKSPACE}
