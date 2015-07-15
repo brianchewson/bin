@@ -1,39 +1,115 @@
-#!/bin/bash
+#!/bin/sh -e
 
-useage()
+#============================================FUNCTIONS==============================================
+usage()
 {
-   echo "gitgrep WORD_TO_SEARCH_ALL_GIT_REPOSITORIES_FOR
-         gitgrep will produce an html pages that contains a link. 
-         When the link is clicked on it will open all of the git repositories and search for WORD_TO_SEARCH_ALL_GIT_REPOSITORIES_FOR
-         It's up to the user to look through all of the opened pages and their results"
+  echo "$0 is a tool to sear all of the git repositories for a word/phrase
+$0 will produec an html page that contains a link,
+when this link is clicked, all of the git repos will open and be searched
+It's up to the user to wade through the final results
+-----------------------------------------------------------------------bch
+USAGE: $0 -w WORD
+  -w     #This is the word or phrase that all of the repositories will be searched for
+"
+  echo $*
+  exit 1
 }
 
-if [ "$#" -lt "1" ]; then
-   useage
-   exit 1
+get_all_git_repos()
+{
+  curl -n -s -o ${GITFILE} http://${GITWEB_URL}/?a=project_index
+}
+
+verify_dependencies()
+{	
+  for REQUIRED_FILE in ${REQUIRED_FILES}; do
+    if [ ! -f ${WORKSPACE}/${REQUIRED_FILE} ]; then
+      usage "${0##*/} requires a missing file, ${REQUIRED_FILE}, to run,
+Please add ${REQUIRED_FILE} to ${WORKSPACE} to continue"
+    fi
+  done
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -w|-W)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for WORD flag (-w)"
+        fi
+        SEARCH=$2
+        shift
+      ;;
+    esac
+    shift
+  done
+  if [ -z "$SEARCH" ]; then
+    usage "No search WORD specified"
+  fi
+  if [ ! -f "${NETRC_FILE}" ] || [ $(grep -c ${GITWEB_URL} ${NETRC_FILE}) -lt 1 ]; then
+    usage "This program uses netrc to obtain the list of git repos from gitweb
+The structure for the file at ~/.netrc is
+machine ${GITWEB_URL}
+login ${NETRC_NAME}
+password YOUR_PASSWORD
+
+$ chmod 400 ~/.netrc"
+  fi
+
+  REQUIRED_FILES=""
+  if [ -n "${REQUIRED_FILES}" ]; then
+    verify_dependencies 
+  fi
+}
+#==========================================END FUNCTIONS============================================
+if [ -z "${WORKSPACE}" ]; then
+  WORKSPACE=$(pwd)
 fi
 
-SEARCH=$1
-HTML="${SEARCH}.html"
 
-#URL="http://starcvs.lebanon.cd-adapco.com/cgi-bin/gitweb.cgi"
-URL="http://gitweb.lebanon.cd-adapco.com/"
+SEARCH=""
+GITFILE=/tmp/git.list
+> ${GITFILE}
+GITWEB_URL="gitweb.lebanon.cd-adapco.com"
+NETRC_FILE=~/.netrc
+NETRC_NAME=$(whoami)
 
-#call for the webpage
-#curl http://starcvs.lebanon.cd-adapco.com/cgi-bin/gitweb.cgi -o t.html
-#then parse for all git repositories
-#need to figure out curl permissions, that don't involve plaintext passwords
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
 
-GITFILE="git.list" #a hard coded list, because of the permisssions issue
+process_arguments "$@"
 
-#use the names of all the git repositories to create an html page with 1 link that opens ~20 webpages
+RESULT_HTML="/tmp/${SEARCH}.html"
+>${RESULT_HTML}
+
+get_all_git_repos
+#use the names of all the git repos to create an html page with 1 link that opens ~20 webpages
 #create the original link
-echo -n "<html><body><a onclick=\"">$HTML #the opening of the original link
+echo -n "<html><body><a onclick=\"">${RESULT_HTML}
 
 #create all the subsequent links
-while read REPO
-do
- echo -n "window.open(&quot;${URL}?p=${REPO};&a=search&h=HEAD&st=grep&s=${SEARCH}&quot;);">>$HTML
-done<$GITFILE
+while read REPO; do
+  REPO=${REPO% *}
+#  echo -n "window.open(&quot;http://${GITWEB_URL}/?p=${REPO};&a=search&h=HEAD&st=grep&s=${SEARCH}&quot;);">>${RESULT_HTML}
+  echo -n "window.open(&quot;" >> ${RESULT_HTML}
+  echo -n "http://${GITWEB_URL}/?p=${REPO};&a=search&h=HEAD&st=grep&s=${SEARCH}" >> ${RESULT_HTML}
+  echo -n "&quot;);" >> ${RESULT_HTML}
+done<${GITFILE}
 
-echo -n "\" href=\"$URL\" target=\"_blank\">Search all git repositories for $SEARCH</a></body></html>">>$HTML #the tail end of the original link
+echo -n "\" href=\"http://${GITWEB_URL}\" target=\"_blank\">Search all git repositories for ${SEARCH}</a></body></html>">>${RESULT_HTML}
+
+firefox -new-window about:newTab
+
+sleep 1
+
+firefox ${RESULT_HTML}
+
+sleep 2
+
+rm -f ${RESULT_HTML} ${GITFILE}
+
