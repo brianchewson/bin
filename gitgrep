@@ -1,0 +1,39 @@
+#!/bin/bash
+
+useage()
+{
+   echo "gitgrep WORD_TO_SEARCH_ALL_GIT_REPOSITORIES_FOR
+         gitgrep will produce an html pages that contains a link. 
+         When the link is clicked on it will open all of the git repositories and search for WORD_TO_SEARCH_ALL_GIT_REPOSITORIES_FOR
+         It's up to the user to look through all of the opened pages and their results"
+}
+
+if [ "$#" -lt "1" ]; then
+   useage
+   exit 1
+fi
+
+SEARCH=$1
+HTML="${SEARCH}.html"
+
+#URL="http://starcvs.lebanon.cd-adapco.com/cgi-bin/gitweb.cgi"
+URL="http://gitweb.lebanon.cd-adapco.com/"
+
+#call for the webpage
+#curl http://starcvs.lebanon.cd-adapco.com/cgi-bin/gitweb.cgi -o t.html
+#then parse for all git repositories
+#need to figure out curl permissions, that don't involve plaintext passwords
+
+GITFILE="git.list" #a hard coded list, because of the permisssions issue
+
+#use the names of all the git repositories to create an html page with 1 link that opens ~20 webpages
+#create the original link
+echo -n "<html><body><a onclick=\"">$HTML #the opening of the original link
+
+#create all the subsequent links
+while read REPO
+do
+ echo -n "window.open(&quot;${URL}?p=${REPO};&a=search&h=HEAD&st=grep&s=${SEARCH}&quot;);">>$HTML
+done<$GITFILE
+
+echo -n "\" href=\"$URL\" target=\"_blank\">Search all git repositories for $SEARCH</a></body></html>">>$HTML #the tail end of the original link
