@@ -1,0 +1,15 @@
+#!/bin/bash
+OUTFILE=email.body
+
+while [ true ]; do
+tail -1 diff.log >> $OUTFILE
+RESULT=$(echo "$(wc -l < diff.log) $(wc -l < sims_to_compare.list)" | awk '{i=$1/$2; i*=100; printf "%d/%d=%0.2f%% complete\n",$1,$2,i}')
+echo $RESULT >> $OUTFILE
+case $RESULT in
+  *100.00%*)
+    mail -a \$OUTFILE -s \"Testing Complete for \$0\" \$RECIPIENTS<\$OUTFILE">>$OUTFILE
+
+sleep 5
+
+done
+
