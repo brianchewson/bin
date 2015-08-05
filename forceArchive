@@ -1,0 +1,82 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to force the archiving process on a Jenkins instance where the process is hung
+-----------------------------------------------------------------------bch
+USAGE: $0 -j JOB_NAME [-u JENKINS_URL]
+  -o     # this is what -o does
+  -j     #JOB_NAME, we need to know which job is hung
+  -u     #Jenkins url, in case that it isn't on ${JENKINS_URL}
+"
+  echo $*
+  exit 1
+}
+
+verify_dependencies()
+{	
+  for REQUIRED_FILE in ${REQUIRED_FILES}; do
+    if [ ! -f ${WORKSPACE}/${REQUIRED_FILE} ]; then
+      usage "${0##*/} requires a missing file, ${REQUIRED_FILE}, to run,
+Please add ${REQUIRED_FILE} to ${WORKSPACE} to continue"
+    fi
+  done
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -j|-J)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for JOB_NAME flag (-j)"
+        fi
+        JOB_NAME=$2
+        shift
+      ;;
+    esac
+    shift
+  done
+  if [ -z "$JOB_NAME" ]; then
+    usage "NO JOB specified"
+  fi
+  if [ "$(curl -s ${JENKINS_URL}/job/${JOB_NAME}/api/xml?tree=name| tr '<' '\n' | grep '^name>' | cut -d '>' -f 2)" != "$JOB_NAME" ]; then
+    usage "JOB $JOB_NAME doesn't exist"
+  fi
+
+  if [ -z "${BUILD_NUMBER}" ]; then
+    BUILD_NUMBER=$(curl -s ${JENKINS_URL}/job/${JOB_NAME}/lastBuild/api/xml?tree=number| tr '<' '\n' | grep '^number>' | cut -d '>' -f 2)
+  fi
+
+  REQUIRED_FILES=""
+  if [ -n "${REQUIRED_FILES}" ]; then
+    verify_dependencies 
+  fi
+}
+#==========================================END FUNCTIONS============================================
+if [ -z "${WORKSPACE}" ]; then
+  WORKSPACE=$(pwd)
+fi
+
+BUILD_NUMBER=""
+JOB_NUMBER=""
+JENKINS_URL="http://starci.lebanon.cd-adapco.com:9090"
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
+
+process_arguments "$@"
+
+JENKINS_SHORTNAME=${JENKINS_URL%%\.*}
+JENKINS_SHORTNAME=${JENKINS_SHORTNAME#http://}
+
+SLAVE=$(curl -s ${JENKINS_URL}/job/${JOB_NAME}/lastBuild/api/xml?tree=builtOn | tr '<' '\n' | grep '^builtOn>' | cut -d '>' -f 2)
+FOREIGN_WORKSPACE=$(curl -s ${JENKINS_URL}/job/${JOB_NAME}/lastBuild/cosoleText|grep -m 1 workspace)
+FOREIGN_WORKSPACE=${FOREING_WORKSPACE#*workspace }
+
+ssh jenkins@${JENKINS_SHORTNAME} "cd cfg/default/jobs/${JOB_NAME}/builds/${BUILD_NUMBER}/archive/results; scp -r test@${SLAVE}:${FOREIGN_WORKSPACE}/results/* ."
