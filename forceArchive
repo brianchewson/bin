@@ -6,7 +6,6 @@ usage()
   echo "$0 is a tool to force the archiving process on a Jenkins instance where the process is hung
 -----------------------------------------------------------------------bch
 USAGE: $0 -j JOB_NAME [-u JENKINS_URL]
-  -o     # this is what -o does
   -j     #JOB_NAME, we need to know which job is hung
   -u     #Jenkins url, in case that it isn't on ${JENKINS_URL}
 "
@@ -83,3 +82,5 @@ echo "Result size on Host Machine"
 ssh test@${SLAVE} 'cd ${FOREIGN_WORKSPACE}/startest/results; du -sh .'
 echo "Result size on Archive Machine"
 ssh jenkins@${JENKINS_SHORTNAME} "cd cfg/default/jobs/${JOB_NAME}/builds/${BUILD_NUMBER}/archive/startest/results; du -sh .; scp -r test@${SLAVE}:${FOREIGN_WORKSPACE}/startest/results/* .; du -sh ."
+
+curl -s ${JENKINS_URL}/job/${JOB_NAME}/${BUILD_NUMBER}/stop --user test:013c64843543051642f4b5ef9a17c54a
