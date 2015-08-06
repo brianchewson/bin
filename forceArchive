@@ -76,7 +76,10 @@ JENKINS_SHORTNAME=${JENKINS_URL%%\.*}
 JENKINS_SHORTNAME=${JENKINS_SHORTNAME#http://}
 
 SLAVE=$(curl -s ${JENKINS_URL}/job/${JOB_NAME}/lastBuild/api/xml?tree=builtOn | tr '<' '\n' | grep '^builtOn>' | cut -d '>' -f 2)
-FOREIGN_WORKSPACE=$(curl -s ${JENKINS_URL}/job/${JOB_NAME}/lastBuild/cosoleText|grep -m 1 workspace)
-FOREIGN_WORKSPACE=${FOREING_WORKSPACE#*workspace }
+FOREIGN_WORKSPACE=$(curl -s ${JENKINS_URL}/job/${JOB_NAME}/lastBuild/consoleText|grep -m 1 workspace)
+FOREIGN_WORKSPACE=${FOREIGN_WORKSPACE#*workspace }
 
-ssh jenkins@${JENKINS_SHORTNAME} "cd cfg/default/jobs/${JOB_NAME}/builds/${BUILD_NUMBER}/archive/results; scp -r test@${SLAVE}:${FOREIGN_WORKSPACE}/results/* ."
+echo "Result size on Host Machine"
+ssh test@${SLAVE} 'cd ${FOREIGN_WORKSPACE}/startest/results; du -sh .'
+echo "Result size on Archive Machine"
+ssh jenkins@${JENKINS_SHORTNAME} "cd cfg/default/jobs/${JOB_NAME}/builds/${BUILD_NUMBER}/archive/startest/results; du -sh .; scp -r test@${SLAVE}:${FOREIGN_WORKSPACE}/startest/results/* .; du -sh ."
