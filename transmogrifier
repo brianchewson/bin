@@ -46,9 +46,10 @@ process_arguments()
   if [ -z "$FILENAME" ]; then
     usage "No file specified, please include a file"
   fi
-  if [ ! -f "$FILENAME" ]; then
-    usage "File ${FILENAME} doesn't exist, please ensure that you have given the full path"
-  fi
+  #TODO: update this to handle requests from, by sshing to test machine and checking file exists
+#  if [ ! -f "$FILENAME" ]; then
+#    usage "File ${FILENAME} doesn't exist, please ensure that you have given the full path"
+#  fi
 }
 #==========================================END FUNCTIONS============================================
 
@@ -78,7 +79,8 @@ case $DIRECTION in
     COMP=${COMP//./_}
     ARCH=${ARCH//./_}
 
-    cp -v $FILENAME ${WORK_DIR}/${MODULE}_${SUITE}_${ARCH}_${COMP}_${VER}
+#    cp -v $FILENAME ${WORK_DIR}/${MODULE}_${SUITE}_${ARCH}_${COMP}_${VER}
+    scp test@gru:${FILENAME} ${WORK_DIR}/${MODULE}_${SUITE}_${ARCH}_${COMP}_${VER}
   ;;
   TO)
     VER=${FILENAME/${FILENAME%_*_*_*}/}
