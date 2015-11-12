@@ -79,8 +79,8 @@ case $DIRECTION in
     COMP=${COMP//./_}
     ARCH=${ARCH//./_}
 
-#    cp -v $FILENAME ${WORK_DIR}/${MODULE}_${SUITE}_${ARCH}_${COMP}_${VER}
-    scp test@gru:${FILENAME} ${WORK_DIR}/${MODULE}_${SUITE}_${ARCH}_${COMP}_${VER}
+    cp -v $FILENAME ${WORK_DIR}/${MODULE}_${SUITE}_${ARCH}_${COMP}_${VER}
+#    scp test@gru:${FILENAME} ${WORK_DIR}/${MODULE}_${SUITE}_${ARCH}_${COMP}_${VER}
   ;;
   TO)
     VER=${FILENAME/${FILENAME%_*_*_*}/}
