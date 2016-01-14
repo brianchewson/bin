@@ -1,11 +1,11 @@
-#!/bin/sh -e
+#!/bin/sh -ex
 
 #============================================FUNCTIONS==============================================
 usage()
 {
   echo "$0 is a tool to get all the loops that match on a keyword and open them in firefox, to kill in the queue or alter the configs (but there is another script to automate that)
 -----------------------------------------------------------------------bch
-USAGE: $0 -g WORD -s 'PAGE' [-f|-c] -j JENKINS_URL|-r|-d
+USAGE: $0 -g WORD -v WORD_TO_EXCLUDE -s 'PAGE' [-f|-c] -j JENKINS_URL|-r|-d
   -c     #use the chrome browser
   -d     #use the development Jenkins (${DEV_URL})
   -f     #use the firefox browser (default)
@@ -14,6 +14,8 @@ USAGE: $0 -g WORD -s 'PAGE' [-f|-c] -j JENKINS_URL|-r|-d
   -j     #specify the exact Jenkins URL
   -r     #use the release Jenkins (${REL_URL})
   -s     #specify a specific jenkins subpage (ie configure)
+  -v     #use to ignore a word or part of a word, ie _np
+         # define multiple ignores with multiple -v arguments
 "
   echo $*
   exit 1
@@ -27,7 +29,7 @@ get_all_job_names()
 get_all_jobs_which_match_our_criteria()
 {
   for GREP_WORD in ${GREP_LIST}; do
-    grep -- ${GREP_WORD} ${OUT_FILE} > ${TMP_FILE}
+    grep -- ${GREP_WORD} ${OUT_FILE} > ${TMP_FILE} || true
     if [ "$(wc -l < ${TMP_FILE})" -eq 0 ]; then
       echo "${GREP_WORD} results in 0 Jenkins Loops. Skipping"
     else
@@ -36,6 +38,45 @@ get_all_jobs_which_match_our_criteria()
   done
 
   sort -u ${OUT_FILE} -o ${OUT_FILE}
+}
+
+eliminate_jobs_which_we_want_to_void()
+{
+  for VOID_WORD in ${VOID_LIST}; do
+    grep -v -- ${VOID_WORD} ${OUT_FILE} > ${TMP_FILE} || true
+    if [ "$(wc -l < ${TMP_FILE})" -eq 0 ]; then
+      echo "${VOID_WORD} results in 0 Jenkins Loops. Skipping"
+    else
+      mv ${TMP_FILE} ${OUT_FILE}
+    fi
+  done
+
+  sort -u ${OUT_FILE} -o ${OUT_FILE}
+}
+
+open_jobs_in_browser()
+{
+  case ${BROWSER} in
+    chrome)
+      google-chrome --user-data-dir 
+    ;;
+    firefox)
+      firefox -new-window about:newTab
+    ;;
+  esac
+  
+  ${NEW_BROWSER_WINDOW}
+  sleep 1 
+  while read JOB; do
+    case ${BROWSER} in
+      firefox)
+        firefox ${JENKINS_URL}/job/${JOB}/${SUBPAGE}
+      ;;
+      chrome)
+        google-chrome ${JENKINS_URL}/job/${JOB}/${SUBPAGE}
+      ;;
+    esac
+  done < ${OUT_FILE}
 }
 
 process_arguments()
@@ -74,6 +115,13 @@ process_arguments()
         SUBPAGE=$2
         shift
       ;;
+      -v|-V)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for WORD flag (-v)"
+        fi
+        VOID_LIST="${VOID_LIST} $2"
+        shift
+      ;;
     esac
     shift
   done
@@ -96,6 +144,7 @@ JENKINS_URL=""
 OUT_FILE=${DATE}.out
 REL_URL="http://relci.lebanon.cd-adapco.com"
 TMP_FILE=${DATE}.tmp
+VOID_LIST=""
 
 if [ $# -lt 1 ]; then
   usage "No arguments specified"
@@ -105,27 +154,10 @@ process_arguments "$@"
 
 get_all_job_names
 get_all_jobs_which_match_our_criteria
-#TODO: create a section which removes other words (a grep -v section)a	
-case ${BROWSER} in
-  chrome)
-    google-chrome --user-data-dir 
-  ;;
-  firefox)
-    firefox -new-window about:newTab
-  ;;
-esac
-  
-${NEW_BROWSER_WINDOW}
-sleep 1 
-while read JOB; do
-  case ${BROWSER} in
-    firefox)
-      firefox ${JENKINS_URL}/job/${JOB}/${SUBPAGE}
-    ;;
-    chrome)
-      google-chrome ${JENKINS_URL}/job/${JOB}/${SUBPAGE}
-    ;;
-  esac
-done < ${OUT_FILE}
+if [ -n "${VOID_LIST}" ]; then
+  eliminate_jobs_which_we_want_to_void
+fi
 
-rm -f ${OUT_FILE} ${TMP_FILE}
+#open_jobs_in_browser
+
+#rm -f ${OUT_FILE} ${TMP_FILE}
