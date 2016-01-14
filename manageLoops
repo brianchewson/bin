@@ -1,4 +1,4 @@
-#!/bin/sh -ex
+#!/bin/sh -e
 
 #============================================FUNCTIONS==============================================
 usage()
@@ -24,6 +24,7 @@ USAGE: $0 -g WORD -v WORD_TO_EXCLUDE -s 'PAGE' [-f|-c] -j JENKINS_URL|-r|-d
 get_all_job_names()
 {
   curl -s "${JENKINS_URL}/api/xml?tree=jobs\[name\]" | tr '<' '\n' | grep ^name | cut -d '>' -f 2 > ${OUT_FILE}
+  JOB_COUNT=$(wc -l < ${OUT_FILE})
 }
 
 get_all_jobs_which_match_our_criteria()
@@ -141,6 +142,7 @@ DEV_URL="http://starci.lebanon.cd-adapco.com:9090"
 FIRST_JOB=TRUE
 GREP_LIST=""
 JENKINS_URL=""
+JOB_COUNT=""
 OUT_FILE=${DATE}.out
 REL_URL="http://relci.lebanon.cd-adapco.com"
 TMP_FILE=${DATE}.tmp
@@ -158,6 +160,10 @@ if [ -n "${VOID_LIST}" ]; then
   eliminate_jobs_which_we_want_to_void
 fi
 
-#open_jobs_in_browser
+if [ $(wc -l < ${OUT_FILE}) -lt ${JOB_COUNT} ]; then
+  open_jobs_in_browser
+else
+  echo "Abort: Trying to open ${JOB_COUNT} jobs"
+fi
 
-#rm -f ${OUT_FILE} ${TMP_FILE}
+rm -f ${OUT_FILE} ${TMP_FILE}
