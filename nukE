@@ -54,3 +54,8 @@ is_git_repo
 is_git_fat_repo
 nuke_repo
 remake_repo
+
+if [ "${GIT}" = "star" ]; then
+  cd ${CURRENT_DIR}
+  chmod 750 ${GIT}
+fi
