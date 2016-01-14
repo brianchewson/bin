@@ -104,11 +104,8 @@ KEEP_RESULTS=false
 case ${SYSTEM} in
   Lin*)
      if [ -z "${JENKINS_HOME}" ]; then
-       HUDSON_MNT=/home/hudson/cfg/default
        STARCI_MNT=/home/starci-jenkins/cfg/default
-       if [ -d "${HUDSON_MNT}" ]; then
-         JENKINS_HOME=${HUDSON_MNT}
-       elif [ -d "${STARCI_MNT}" ]; then
+       if [ -d "${STARCI_MNT}" ]; then
          JENKINS_HOME=${STARCI_MNT}
        else
          usage "No Home for Hudson found"
@@ -146,7 +143,7 @@ if [ "${KEEP_RESULTS}" = "true" ]; then
 fi
 
 echo "CLEARING OLD WORKSPACE"
-\rm -rfv /tmp/star-"${USER}"*
+#\rm -rfv /tmp/star-"${USER}"*
 cd ${WORKSPACE}
 \rm -rfv *
 
