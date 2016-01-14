@@ -78,9 +78,9 @@ SLAVE=$(curl -s ${JENKINS_URL}/job/${JOB_NAME}/lastBuild/api/xml?tree=builtOn | 
 FOREIGN_WORKSPACE=$(curl -s ${JENKINS_URL}/job/${JOB_NAME}/lastBuild/consoleText|grep -m 1 workspace)
 FOREIGN_WORKSPACE=${FOREIGN_WORKSPACE#*workspace }
 
-echo "Result size on Host Machine"
-ssh test@${SLAVE} 'cd ${FOREIGN_WORKSPACE}/startest/results; du -sh .'
-echo "Result size on Archive Machine"
+echo "Result size on ${SLAVE} @ ${FOREIGN_WORKSPACE}/startest/results"
+ssh test@${SLAVE} "cd ${FOREIGN_WORKSPACE}/startest/results; du -sh ."
+echo "Result size on ${JENKINS_SHORTNAME} @ cfg/default/jobs/${JOB_NAME}/builds/${BUILD_NUMBER}/archive/startest/results"
 ssh jenkins@${JENKINS_SHORTNAME} "cd cfg/default/jobs/${JOB_NAME}/builds/${BUILD_NUMBER}/archive/startest/results; du -sh .; scp -r test@${SLAVE}:${FOREIGN_WORKSPACE}/startest/results/* .; du -sh ."
 
 curl -s ${JENKINS_URL}/job/${JOB_NAME}/${BUILD_NUMBER}/stop --user test:013c64843543051642f4b5ef9a17c54a
