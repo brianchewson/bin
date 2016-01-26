@@ -1,0 +1,105 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to
+-----------------------------------------------------------------------bch
+USAGE: $0 -o [OPTIONAL]
+  -o     # this is what -o does
+"
+  echo $*
+  exit 1
+}
+
+verify_dependencies()
+{	
+  for REQUIRED_FILE in ${REQUIRED_FILES}; do
+    if [ ! -f ${WORKSPACE}/${REQUIRED_FILE} ]; then
+      usage "${0##*/} requires a missing file, ${REQUIRED_FILE}, to run,
+Please add ${REQUIRED_FILE} to ${WORKSPACE} to continue"
+    fi
+  done
+}
+
+get_the_location_of_the_current_window()
+{
+  FOCUS_ID=$(xdpyinfo | grep focus)
+  FOCUS_ID=${FOCUS_ID%%,*}
+  FOCUS_ID=${FOCUS_ID##* }
+
+  X_COORD=$(xwininfo -id $FOCUS_ID | grep 'Absolute upper-left X')
+  X_COORD=${X_COORD#*:  }
+
+  if [ ${X_COORD} -lt 1920 ]; then
+    CURRENT_LOCATION="LEFT"
+  fi
+}
+
+open_new_windows()
+{
+  gnome-terminal --window-with-profile=Pro --geometry=100x40+${PRO_X}+${PRO_Y}
+  gnome-terminal --geometry=100x40+${PLN_X}+${PLN_Y}
+  gnome-terminal --window-with-profile=Test --geometry=204x24+${TST_X}+${TST_Y}
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -o|-O)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for OPTIONAL flag (-o)"
+        fi
+        DO_O=$2
+        shift
+      ;;
+    esac
+    shift
+  done
+  if [ -z "$DO_O" ]; then
+    usage "NO DIR specified"
+  fi
+  if [ ! -d "$DO_O" ]; then
+    usage "DIR $DO_O doesn't exist"
+  fi
+
+  REQUIRED_FILES=""
+  if [ -n "${REQUIRED_FILES}" ]; then
+    verify_dependencies 
+  fi
+}
+#==========================================END FUNCTIONS============================================
+if [ -z "${WORKSPACE}" ]; then
+  WORKSPACE=$(pwd)
+fi
+
+CURRENT_LOCATION="RIGHT"
+
+PRO_X=1920
+PLN_X=2748
+TST_X=1920
+
+PRO_Y=0
+PLN_Y=0
+TST_Y=756
+
+#if [ $# -lt 1 ]; then
+#  usage "No arguments specified"
+#fi
+#process_arguments "$@"
+
+get_the_location_of_the_current_window
+
+if [ ${CURRENT_LOCATION} = "LEFT" ]; then
+  PRO_X=0
+  PLN_X=828
+  TST_X=0
+fi
+
+open_new_windows
+
+kill -9 $PPID
