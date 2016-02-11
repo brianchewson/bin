@@ -96,6 +96,15 @@ process_arguments()
     usage "Can't find a startest directory (git repo) at ${STARTEST_HOME}/"
   fi
 
+  if [ ! -L ${STAR_HOME}/../.dev ]; then
+    echo "Linking Mirror"
+    if [ ${BRANCH} = 'development' ]; then
+      ln -s /home/star/mirror ${STAR_HOME}/../.dev
+    else
+      ln -s /home/release/mirror ${STAR_HOME}/../.dev
+    fi
+  fi
+
 }
 #==========================================END FUNCTIONS============================================
 
