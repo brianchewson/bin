@@ -191,6 +191,7 @@ echo "UNZIPPING 7z"
 echo "MOVING STARTEST"
 mv ${SEVEN_Z%.7z}/* ${WORKSPACE}
 echo "CONNECTING LINKS TO MIRROR_HOME"
+cd ${STARTEST_HOME}
 make setup
 
 if [ "${LOAD_DATABASE}" = "true" ]; then 
