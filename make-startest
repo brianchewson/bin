@@ -5,8 +5,9 @@ usage()
 {
   echo "$0 is a tool to
 --------------------------------------------------------------------------
-USAGE: $0 [ -s PATH -t PATH -u ] [ -r MAJOR.MINOR] [ -d ] [ -w DATE ]
+USAGE: $0 [ -s PATH -t PATH -u ] [ -r MAJOR.MINOR] [ -d ] [ -w DATE ] [-l]
   -d     #destroy the original git repos
+  -l     #make a local database, instead of loading to ~/.startestdb
   -r     #make the release branch
   -s     #path to star (git repo), defaults to ${STAR_HOME}
   -t     #path to startest (git repo), defaults to ${STARTEST_HOME}
@@ -27,6 +28,9 @@ process_arguments()
       ;;
       -d|-D)
         DESTROY=true
+      ;;
+      -l|-L)
+        LOCAL_DATABASE=true
       ;;
       -r|-R)
         RELEASE=$2
@@ -110,6 +114,7 @@ process_arguments()
 
 BRANCH=development
 DESTROY=false
+LOCAL_DATABASE=false
 STAR_HOME=~/dev/star
 STARTEST_HOME=~/dev/startest
 UPDATE=false
@@ -151,5 +156,9 @@ git checkout master
 git pull
 if [ $BRANCH = release ]; then
   git checkout release/${RELEASE}
+fi
+if [ "${LOCAL_DATABASE}" = true ]; then
+  mkdir .startestdb
+  touch .startestdb/startest.h2.db
 fi
 make 
