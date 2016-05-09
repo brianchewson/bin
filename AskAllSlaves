@@ -19,7 +19,7 @@ USAGE: $0 -a 'ACTION' -l 'LABEL' -j JENKINS_URL|-r|-d
 
 get_all_slaves()
 {
-  SLAVE_LIST="$(curl -s "${JENKINS_URL}/computer/api/xml?tree=computer\[displayName\]" | tr '<' '\n' | grep ^displayName | cut -d '>' -f 2 | sort | tr '\n' ' ')"
+  SLAVE_LIST="$(curl -s "${JENKINS_URL}/computer/api/xml?tree=computer\[displayName\]" -u ${AUTH_TOKEN} | tr '<' '\n' | grep ^displayName | cut -d '>' -f 2 | sort | tr '\n' ' ')"
 
   #remove slaves ssh: Could not resolve hostname
   SLAVE_LIST=${SLAVE_LIST/atom /}
@@ -59,7 +59,7 @@ get_all_slaves()
 
 get_label_slaves()
 {
-  SLAVE_LIST="$(curl -s "${JENKINS_URL}/label/${LABEL}/api/xml?tree=nodes\[nodeName\]" | tr '<' '\n' | grep ^nodeName | cut -d '>' -f 2 | sort | tr '\n' ' ')"
+  SLAVE_LIST="$(curl -s "${JENKINS_URL}/label/${LABEL}/api/xml?tree=nodes\[nodeName\]" -u ${AUTH_TOKEN} | tr '<' '\n' | grep ^nodeName | cut -d '>' -f 2 | sort | tr '\n' ' ')"
 }
 
 ssh_as_test()
@@ -86,6 +86,7 @@ process_arguments()
       ;;
       -d|-D)
         JENKINS_URL=${DEV_URL}
+        AUTH_TOKEN=test:88257d321f7afe0920bfc9ac894073b1
       ;;
       -j|-J)
         JENKINS_URL=$2
@@ -97,6 +98,7 @@ process_arguments()
       ;;
       -r|-R)
         JENKINS_URL=${REL_URL}
+        AUTH_TOKEN=test:88ee9d3f17d7d2a7fa0a31a76e2bcf0f
       ;;
       *)
         PASSTHROUGH_ARGS="${PASSTHROUGH_ARGS} $1"
