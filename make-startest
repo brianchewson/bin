@@ -35,6 +35,7 @@ process_arguments()
       -r|-R)
         RELEASE=$2
         BRANCH=release
+        LOCAL_DATABASE=true
       ;;
       -s|-S)
         STAR_HOME=$2
