@@ -1,0 +1,7 @@
+#!/bin/sh
+
+SIM=$1
+
+rm -fv ${SIM}
+
+rmdir -pv ${SIM%/*}
