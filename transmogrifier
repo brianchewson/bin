@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -ex
 
 #============================================FUNCTIONS==============================================
 usage()
@@ -83,14 +83,16 @@ case $DIRECTION in
 #    scp test@gru:${FILENAME} ${WORK_DIR}/${MODULE}_${SUITE}_${ARCH}_${COMP}_${VER}
   ;;
   TO)
-    VER=${FILENAME/${FILENAME%_*_*_*}/}
+    CURRENT_FILENAME=${FILENAME##*/}
+   
+    VER=${CURRENT_FILENAME/${CURRENT_FILENAME%_*_*_*}/}
     VER=${VER#_}
     VER=${VER%.sim}
 
-    MODULE=${FILENAME%%_*}
+    MODULE=${CURRENT_FILENAME%%_*}
     
     #check for gnu compiler, otherwise treat as an intel
-    COMP=${FILENAME/_${VER}.sim}
+    COMP=${CURRENT_FILENAME/_${VER}.sim}
     case ${COMP#${MODULE}_} in
       *_gnu*)
         COMP=gnu${COMP#*_gnu}
@@ -99,11 +101,11 @@ case $DIRECTION in
         COMP=intel${COMP#*_intel}
       ;;
       *)
-        usage "${FILENAME} has an unknown COMPILER in the TO convert section"
+        usage "${CURRENT_FILENAME} has an unknown COMPILER in the TO convert section"
       ;;
     esac
 
-    ARCH=${FILENAME/_${COMP}_${VER}.sim}
+    ARCH=${CURRENT_FILENAME/_${COMP}_${VER}.sim}
     case ${ARCH#${MODULE}_} in
       *_aix*)
         ARCH=aix${ARCH#*_aix}
@@ -121,13 +123,13 @@ case $DIRECTION in
         ARCH=win${ARCH#*_win}
       ;;
       *)
-        usage "${FILENAME} has an unknown ARCHITECTURE in the TO convert section"
+        usage "${CURRENT_FILENAME} has an unknown ARCHITECTURE in the TO convert section"
       ;;
     esac 
 
     #since suites can contain underscores it was easier to obtain all of the other pieces and then
     #determine the suite by removing all of the other pieces from the file name
-    SUITE=${FILENAME%_${ARCH}_${COMP}_${VER}.sim}
+    SUITE=${CURRENT_FILENAME%_${ARCH}_${COMP}_${VER}.sim}
     SUITE=${SUITE#${MODULE}_}
 
     #reform Arch to contain . instead of _
