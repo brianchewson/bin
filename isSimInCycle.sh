@@ -129,7 +129,7 @@ MODULE=""
 SUITE=""
 SHOW_MODE="summary"
 
-DATA_DIR=/home/testdata
+DATA_DIR=/home/testdata/backward
 
 ARCHIVE_LIST="development release"
 
