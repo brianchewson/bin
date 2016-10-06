@@ -3,7 +3,7 @@
 #============================================FUNCTIONS==============================================
 usage()
 {
-  echo "$0 is a tool to get a slave's IP into a known_hosts file on a Jenkins instance
+  echo "$0 is a tool to get an agent's IP into a known_hosts file on a Jenkins instance
 This prevents job breakage at use time
 -----------------------------------------------------------------------bch
 USAGE: $0 [-f FQDN_SUFFIX] -j JENKINS_INSTANCE -m MACHINE_NAME [-q]
@@ -21,12 +21,17 @@ USAGE: $0 [-f FQDN_SUFFIX] -j JENKINS_INSTANCE -m MACHINE_NAME [-q]
   exit 1
 }
 
+err_echo()
+{
+  echo "$@" 1>&2
+}
+
 soft_http_check_on_jenkines()
 {
   for JENKINS in ${JENKINS_LIST}; do
-    JENKINS_URL=http://${JENKINS}.${FQDN_SUFFIX}/computer/api/xml?tree=computer
+    JENKINS_URL=http://${JENKINS}.${FQDN_SUFFIX}/api/xml?tree=hudson
     if ! curl -s ${JENKINS_URL} > /dev/null; then
-      echo "WARNING: Cannot fetch page from ${JENKINS} as user anonymous. This is an indication that a jenkins server is not running."
+      err_echo "WARNING: Cannot fetch page from ${JENKINS}. This is an indication that a jenkins server is not running."
     fi
   done  
 }
@@ -109,7 +114,7 @@ soft_http_check_on_jenkines
 
 for JENKINS in ${JENKINS_LIST}; do
   # check if the server machine is available
-  if ssh -oBatchMode=yes -q jenkins@${JENKINS}.${FQDN_SUFFIX} 'exit' > /dev/null; then
+  if ssh -oBatchMode=yes -q root@${JENKINS}.${FQDN_SUFFIX} 'exit' > /dev/null; then
     if [ "${QUIET_MODE}" = "FALSE" ]; then
       echo "Adding public keys to known_hosts on ${JENKINS}"
     fi
@@ -120,19 +125,20 @@ for JENKINS in ${JENKINS_LIST}; do
           echo "Adding ${MACHINE} to ${JENKINS} known_hosts"
         fi
         #format of the command will be 
-        #ssh from here to the jenkins server machine as user:jenkins,
-        # from the jenkins machine ssh to the agent machine as user:test
+        #ssh from here to the jenkins server machine as user:root,
+        # su to jenkins then from the jenkins server machine ssh to 
+        # the agent machine as user:test
         #running twice, once for shortname, once for FQDN!
-        ssh jenkins@${JENKINS}.${FQDN_SUFFIX} "ssh -oStrictHostKeyChecking=no test@${MACHINE} 'exit'"
+        ssh root@${JENKINS}.${FQDN_SUFFIX} "su - jenkins -c \"ssh -oStrictHostKeyChecking=no test@${MACHINE} 'exit'\""
 
-        ssh jenkins@${JENKINS}.${FQDN_SUFFIX} "ssh -oStrictHostKeyChecking=no test@${MACHINE}.${FQDN_SUFFIX} 'exit'"
+        ssh root@${JENKINS}.${FQDN_SUFFIX} "su - jenkins -c \"ssh -oStrictHostKeyChecking=no test@${MACHINE}.${FQDN_SUFFIX} 'exit'\""
       else
-        echo "WARNING: Cannot access ${MACHINE}.${FQDN_SUFFIX}"
-        echo "WARNING: Did you forget to turn it on?"
+        err_echo "WARNING: Cannot access ${MACHINE}.${FQDN_SUFFIX}"
+        err_echo "WARNING: Did you forget to turn it on?"
       fi
     done
   else
-    echo "WARNING: You do not have keys configured as jenkins@${JENKINS}"
-    echo "WARNING: Skipping handshake between ${JENKINS} -> ${MACHINE_LIST}"
+    err_echo "WARNING: You do not have keys configured as root@${JENKINS}"
+    err_echo "WARNING: Skipping handshake between ${JENKINS} -> ${MACHINE_LIST}"
   fi 
 done
