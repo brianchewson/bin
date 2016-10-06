@@ -1,0 +1,138 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to get a slave's IP into a known_hosts file on a Jenkins instance
+This prevents job breakage at use time
+-----------------------------------------------------------------------bch
+USAGE: $0 [-f FQDN_SUFFIX] -j JENKINS_INSTANCE -m MACHINE_NAME [-q]
+  -f     # FQDN_SUFFIX, specify the domain where machine and server are
+         # eg -f lebanon.cd-adapco.com [default option]
+  -j     # JENKINS_INSTANCE, specify the Jenkins server name, specify multiple instances with 
+         # multiple -j (eg -j starci -j intci)
+         # you may also try -j \"starci intci\"
+  -m     # MACHINE_NAME, specify the machine you'd like to introduce to the various jenkines
+         # specify multiple machines with multiple -m (eg -m cent66-build35 -m cent66-build36)
+         # you may also try -m \"cent66-build35 cent66-build36\"
+  -q     # QUIET_MODE, don't tell me about successes
+"
+  echo $*
+  exit 1
+}
+
+soft_http_check_on_jenkines()
+{
+  for JENKINS in ${JENKINS_LIST}; do
+    JENKINS_URL=http://${JENKINS}.${FQDN_SUFFIX}/computer/api/xml?tree=computer
+    if ! curl -s ${JENKINS_URL} > /dev/null; then
+      echo "WARNING: Cannot fetch page from ${JENKINS} as user anonymous. This is an indication that a jenkins server is not running."
+    fi
+  done  
+}
+
+verify_dependencies()
+{	
+  for REQUIRED_FILE in ${REQUIRED_FILES}; do
+    if [ ! -f ${WORKSPACE}/${REQUIRED_FILE} ]; then
+      usage "${0##*/} requires a missing file, ${REQUIRED_FILE}, to run,
+Please add ${REQUIRED_FILE} to ${WORKSPACE} to continue"
+    fi
+  done
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -f|-F)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for FQDN_SUFFIX flag (-f)"
+        fi
+        #cut off leading litteral dot
+        FQDN_SUFFIX=${2#\.} 
+        shift
+      ;;
+      -j|-J)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for JENKINS_INSTANCE flag (-j)"
+        fi
+        JENKINS_LIST="${JENKINS_LIST} ${2}"
+        shift
+      ;;
+      -m|-M)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for MACHINE_NAME flag (-m)"
+        fi
+        MACHINE_LIST="${MACHINE_LIST} ${2}"
+        shift
+      ;;
+      -q|-Q)
+        QUIET_MODE=TRUE
+      ;;
+    esac
+    shift
+  done
+  for LIST in JENKINS_LIST MACHINE_LIST; do
+    if [ -z "${!LIST}" ]; then
+      usage "No ${LIST} specified"
+    fi
+  done
+
+  REQUIRED_FILES=""
+  if [ -n "${REQUIRED_FILES}" ]; then
+    verify_dependencies 
+  fi
+}
+#==========================================END FUNCTIONS============================================
+if [ -z "${WORKSPACE}" ]; then
+  WORKSPACE=$(pwd)
+fi
+
+FQDN_SUFFIX="lebanon.cd-adapco.com"
+JENKINS_LIST=""
+MACHINE_LIST=""
+QUIET_MODE=FALSE
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
+
+process_arguments "$@"
+
+#just check if you can reach an html page, don't make any decisions based on this
+#server could be down, or anonymous user doesn't have any access
+soft_http_check_on_jenkines
+
+for JENKINS in ${JENKINS_LIST}; do
+  # check if the server machine is available
+  if ssh -oBatchMode=yes -q jenkins@${JENKINS}.${FQDN_SUFFIX} 'exit' > /dev/null; then
+    if [ "${QUIET_MODE}" = "FALSE" ]; then
+      echo "Adding public keys to known_hosts on ${JENKINS}"
+    fi
+    for MACHINE in ${MACHINE_LIST}; do
+      # check if the agent machine is available
+      if ping -c 1 ${MACHINE}.${FQDN_SUFFIX} > /dev/null 2> /dev/null; then
+        if [ "${QUIET_MODE}" = "FALSE" ]; then
+          echo "Adding ${MACHINE} to ${JENKINS} known_hosts"
+        fi
+        #format of the command will be 
+        #ssh from here to the jenkins server machine as user:jenkins,
+        # from the jenkins machine ssh to the agent machine as user:test
+        #running twice, once for shortname, once for FQDN!
+        ssh jenkins@${JENKINS}.${FQDN_SUFFIX} "ssh -oStrictHostKeyChecking=no test@${MACHINE} 'exit'"
+
+        ssh jenkins@${JENKINS}.${FQDN_SUFFIX} "ssh -oStrictHostKeyChecking=no test@${MACHINE}.${FQDN_SUFFIX} 'exit'"
+      else
+        echo "WARNING: Cannot access ${MACHINE}.${FQDN_SUFFIX}"
+        echo "WARNING: Did you forget to turn it on?"
+      fi
+    done
+  else
+    echo "WARNING: You do not have keys configured as jenkins@${JENKINS}"
+    echo "WARNING: Skipping handshake between ${JENKINS} -> ${MACHINE_LIST}"
+  fi 
+done
