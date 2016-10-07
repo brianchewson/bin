@@ -1,0 +1,172 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to get an agent's known_hosts file full of frequently used machines
+This prevents job breakage at use time, by preventing password entry
+-----------------------------------------------------------------------bch
+USAGE: $0 [-f FQDN_SUFFIX] -m MACHINE -n NODES [-q]
+  -f     # FQDN_SUFFIX, specify the domain where machine and server are
+         # eg -f lebanon.cd-adapco.com [default option]
+  -m     # MACHINE, specify the machine you'd like to introduce to the various nodes
+         # specify multiple machines with multiple -m (eg -m cent66-build35 -m cent66-build36)
+         # you may also try -m \"cent66-build35 cent66-build36\"
+  -n     # NODES, specify the nodes you'd like MACHINE to be introduced to
+         # specify multiple nodes with multiple -n (eg -n castor -n pollux)
+         # you may also try -n \"castor pollux\"
+         # to include the ability for a machine to connect with itself, specify SELF
+  -q     # QUIET_MODE, don't tell me about successes
+
+------------------------------------------------------------------------
+  -d     # SHORTLIST for DEVCI [NOT-IMPLEMENTED]
+  -i     # SHORTLIST for INTCI [NOT-IMPLEMENTED]
+  -r     # SHORTLIST for RELCI [NOT-IMPLEMENTED]
+  -s     # SHORTLIST for STARCI \"castor cloud009 cloud011 dslicense gru pollux testhome SELF starci sv650\"
+  -v     # SHORTLIST for INTCI-DEV [NOT-IMPLEMENTED]
+  THE SHORTLIST CAN BE COMBINED WITH OTHER NODE SPECIFICATIONS (eg -s -n foo, will add foo to the above list specified by -s)
+"
+  echo $*
+  exit 1
+}
+
+err_echo()
+{
+  echo "$@" 1>&2
+}
+
+ping_all()
+{
+  LIST=$1
+  RET_VAL=""
+  for HOST in ${LIST}; do
+    if [ "${HOST}" = "SELF" ]; then
+      RET_VAL="${RET_VAL} ${HOST}"
+    elif ping -c 1 ${HOST}.${FQDN_SUFFIX} > /dev/null 2> /dev/null; then
+      RET_VAL="${RET_VAL} ${HOST}"
+    else
+      err_echo "WARNING: Cannot access ${HOST}.${FQDN_SUFFIX}"
+      err_echo "WARNING: Did you forget to turn it on?"
+    fi
+  done
+  echo "${RET_VAL}"
+}
+
+sort_list()
+{
+  LIST=$1
+  RET_VAL="$(echo $LIST | tr ' ' '\n' | sort -u | tr '\n' ' ')"
+  echo "${RET_VAL}"
+}
+
+verify_dependencies()
+{	
+  for REQUIRED_FILE in ${REQUIRED_FILES}; do
+    if [ ! -f ${WORKSPACE}/${REQUIRED_FILE} ]; then
+      usage "${0##*/} requires a missing file, ${REQUIRED_FILE}, to run,
+Please add ${REQUIRED_FILE} to ${WORKSPACE} to continue"
+    fi
+  done
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -f|-F)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for FQDN_SUFFIX flag (-f)"
+        fi
+        #cut off leading litteral dot
+        FQDN_SUFFIX=${2#\.} 
+        shift
+      ;;
+      -m|-M)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for MACHINE flag (-m)"
+        fi
+        MACHINE_LIST="${MACHINE_LIST} ${2}"
+        shift
+      ;;
+      -n|-N)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for NODE flag (-n)"
+        fi
+        NODE_LIST="${NODE_LIST} ${2}"
+        shift
+      ;;
+      -q|-Q)
+        QUIET_MODE=TRUE
+      ;;
+      -s|-S)
+        NODE_LIST="${NODE_LIST} castor"
+        NODE_LIST="${NODE_LIST} cloud009"
+        NODE_LIST="${NODE_LIST} cloud011"
+        NODE_LIST="${NODE_LIST} dslicense"
+        NODE_LIST="${NODE_LIST} gru"
+        NODE_LIST="${NODE_LIST} pollux"
+        NODE_LIST="${NODE_LIST} testhome"
+        NODE_LIST="${NODE_LIST} SELF"
+        NODE_LIST="${NODE_LIST} starci"
+        NODE_LIST="${NODE_LIST} sv650"
+      ;;
+    esac
+    shift
+  done
+  for LIST in MACHINE_LIST NODE_LIST; do
+    if [ -z "${!LIST}" ]; then
+      usage "No ${LIST} specified"
+    fi
+  done
+
+  REQUIRED_FILES=""
+  if [ -n "${REQUIRED_FILES}" ]; then
+    verify_dependencies 
+  fi
+}
+#==========================================END FUNCTIONS============================================
+if [ -z "${WORKSPACE}" ]; then
+  WORKSPACE=$(pwd)
+fi
+
+FQDN_SUFFIX="lebanon.cd-adapco.com"
+JENKINS_LIST=""
+MACHINE_LIST=""
+QUIET_MODE=FALSE
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
+
+process_arguments "$@"
+
+for FUNCTION in sort_list ping_all; do 
+  MACHINE_LIST=$(${FUNCTION} "${MACHINE_LIST}")
+  NODE_LIST=$(${FUNCTION} "${NODE_LIST}")
+done
+
+for MACHINE in ${MACHINE_LIST}; do
+  # check if the machine is available
+  if ssh -oBatchMode=yes -q test@${MACHINE}.${FQDN_SUFFIX} 'exit' > /dev/null; then
+    if [ "${QUIET_MODE}" = "FALSE" ]; then
+      echo "Adding public keys to known_hosts on ${MACHINE}"
+    fi
+    for NODE in ${NODE_LIST}; do
+      if [ "${NODE}" = "SELF" ]; then
+        NODE=${MACHINE}
+      fi
+      if [ "${QUIET_MODE}" = "FALSE" ]; then
+        echo "Adding ${NODE} to ${MACHINE} known_hosts"
+      fi
+
+      ssh test@${MACHINE}.${FQDN_SUFFIX} "ssh -oStrictHostKeyChecking=no test@${NODE} 'exit'; exit"
+
+    done
+  else
+    err_echo "WARNING: You do not have keys configured as test@${MACHINE}.${FQDN}"
+    err_echo "WARNING: Skipping handshake between ${MACHINE} -> ${NODE_LIST}"
+  fi 
+done
