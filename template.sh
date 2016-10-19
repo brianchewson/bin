@@ -3,14 +3,20 @@
 #============================================FUNCTIONS==============================================
 usage()
 {
-  echo "$0 is a tool to
+  err_echo "$0 is a tool to
 -----------------------------------------------------------------------bch
 USAGE: $0 -o [OPTIONAL]
   -o     # this is what -o does
 "
-  echo $*
+  err_echo $*
   exit 1
 }
+
+err_echo()
+{
+  echo "$@" 1>&2
+}
+
 
 verify_dependencies()
 {	
