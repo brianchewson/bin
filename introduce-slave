@@ -166,7 +166,7 @@ for MACHINE in ${MACHINE_LIST}; do
 
     done
   else
-    err_echo "WARNING: You do not have keys configured as test@${MACHINE}.${FQDN}"
+    err_echo "WARNING: You do not have keys configured as test@${MACHINE}.${FQDN_SUFFIX}"
     err_echo "WARNING: Skipping handshake between ${MACHINE} -> ${NODE_LIST}"
   fi 
 done
