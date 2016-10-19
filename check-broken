@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# check for the number of args = 1
+CHECK_DIR=$1
+
+if [ ! -d ${CHECK_DIR} ]; then
+  echo "${CHECK_DIR} doesn't exist"
+  exit 1
+fi
+
+for i in $(find ${CHECK_DIR}); do 
+  if (test -h $i); then 
+    file $i|grep broken
+  fi
+done

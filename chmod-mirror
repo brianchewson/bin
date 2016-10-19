@@ -1,0 +1,32 @@
+#!/bin/sh
+if [ -z "$@" ] ; then
+  echo "Error! Specified directory to chmod"
+fi
+
+if [ -r "$@" ] ; then
+  #find $@ -type f        -exec chmod 644 {} \;
+
+  find $@ -type d        -exec chmod 755 {} \;
+  find $@ -name "*.so"   -exec chmod 755 {} \;
+  find $@ -name "*.so.*" -exec chmod 755 {} \;
+  find $@ -name "*.a"    -exec chmod 755 {} \;
+  find $@ -name "*.dll"  -exec chmod 755 {} \;
+  find $@ -name "*.lib"  -exec chmod 755 {} \;
+  find $@ -name "*.exe"  -exec chmod 755 {} \;
+  find $@ -name "*.bat"  -exec chmod 755 {} \;
+  find $@ -name "*.html"  -exec chmod 755 {} \;
+  find $@ -name "*.gif"  -exec chmod 755 {} \;
+
+  # SCMAT requirement
+  find $@ -name "RUN"    -exec chmod 755 {} \;
+  find $@ -name "starcast.mat*" -exec chmod 755 {} \;
+
+  #cad import
+  find $@ -name "xttranslator_*" -exec chmod 755 {} \;
+  find $@ -name "mpirun*" -exec chmod 755 {} \;
+
+  # parasolid
+  find $@ -name "*.sch_txt"  -exec chmod 755 {} \;
+
+  #symlinks -rd $@ 
+fi

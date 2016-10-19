@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# check for the number of args = 1
+if [-z "$@" ]; then 
+  echo "Error! No directory specified"
+fi
+
+CHOWN_DIR=$1
+
+if [ ! -d ${CHOWN_DIR} ]; then
+  echo "${CHOWN_DIR} doesn't exist"
+  exit 1
+fi
+
+
+chown -R star:wheel ${CHOWN_DIR}
