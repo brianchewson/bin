@@ -50,13 +50,20 @@ err_echo()
 
 summarize_status()
 {
-  echo "Summary"
+  echo "Summary... this will take a minute"
+  find -type f -exec stat -c "%a %U %n" {} \; > ${SUMMARY_FILE}
   for FILE_TYPE_LIST in PLAIN_FILE_TYPES SCMAT_FILE_TYPES CAD_IMPORT_FILE_TYPES PARASOLID_FILE_TYPES; do
     echo "${FILE_TYPE_LIST}--------------------------"
     for FILE_TYPE in ${!FILE_TYPE_LIST}; do
-      echo "${FILE_TYPE}: 755 : $(find ${MIRROR_DIR} -name "${FILE_TYPE}" -exec stat -c "%a" {} \; | grep -c 755), 644 : $(find ${MIRROR_DIR} -name "${FILE_TYPE}" -exec stat -c "%a" {} \; | grep -c 644), other $(find ${MIRROR_DIR} -name "${FILE_TYPE}" -exec stat -c "%a %n" {} \; | grep -v ^755 | grep -v ^644)"
+      echo "${FILE_TYPE}: 755 : $(grep "${FILE_TYPE}" ${SUMMARY_FILE} | grep -c 755), 644 : $(grep "${FILE_TYPE}" ${SUMMARY_FILE} | grep -c 644), other $(grep "${FILE_TYPE}" ${SUMMARY_FILE} | grep -v ^755 | grep -v ^644)"
     done
   done
+  for PERMS in "755 star" "644 star"; do 
+    echo "PERMS \"${PERMS}\"---------------"
+    echo "${PERMS} : $(grep -c "$PERMS" ${SUMMARY_FILE})"
+  done
+  echo "ALL OTHERS------------------"
+  grep -v "755 star" ${SUMMARY_FILE} | grep -v "644 star" || true
 }
 
 verify_dependencies()
@@ -105,8 +112,9 @@ if [ -z "${WORKSPACE}" ]; then
   WORKSPACE=$(pwd)
 fi
 
-
+DATE=$(date +%s)
 MIRROR_DIRS=""
+SUMMARY_FILE=/tmp/mirrorize_summary.${DATE}
 
 PLAIN_FILE_TYPES='*.a *.bat *.dll *.exe *.gif *.html *.lib *.so *.so.*'
 SCMAT_FILE_TYPES='RUN starcast.mat*'
