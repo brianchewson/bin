@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -ex
 
 #============================================FUNCTIONS==============================================
 usage()
@@ -14,29 +14,35 @@ USAGE: $0
 
 back_it_up()
 {
-  for ITEM in ${COPY_LIST}; do
+  for ITEM in ${BACKUP_LIST}; do
     echo "Making 7z for ${ITEM}"
-    7za a ${BACKUP_DIR}/${DATE}/${ITEM}.7z ~/${ITEM} > ${BACKUP_DIR}/${DATE}/${ITEM}.log
-    du -sh ${BACKUP_DIR}/${DATE}/${ITEM}.7z
+    7za a ${LOCAL_BACKUP}/${DATE}/${ITEM}.7z ~/${ITEM} > ${LOCAL_BACKUP}/${DATE}/${ITEM}.log
+    du -sh ${LOCAL_BACKUP}/${DATE}/${ITEM}.7z
   done
 }
 
 create_backup_loc()
 {
-  if [ ! -d ${BACKUP_DIR}/${DATE} ]; then
-    echo "Making dir ${BACKUP_DIR}/${DATE}"
-    mkdir -p ${BACKUP_DIR}/${DATE}
-  fi
+  if [ ! -d ${LOCAL_BACKUP}/${DATE} ]; then
+    echo "Making dir ${LOCAL_BACKUP}/${DATE}"
+    mkdir -p ${LOCAL_BACKUP}/${DATE}
+  fi 
 }
 
 remove_old_backups()
 {
-  if [ $(ls -1t ${BACKUP_DIR} | wc -l ) -gt ${NUMBER_TO_KEEP} ]; then
-    ls -1tr ${BACKUP_DIR} | head -n -${NUMBER_TO_KEEP} | while read BACKUP_NUMBER; do
+  if [ $(ls -1t ${LOCAL_BACKUP} | wc -l ) -gt ${NUMBER_TO_KEEP} ]; then
+    ls -1tr ${LOCAL_BACKUP} | head -n -${NUMBER_TO_KEEP} | while read BACKUP_NUMBER; do
       echo "Deleting Backup ${BACKUP_NUMBER}"
-      rm -rf ${BACKUP_DIR}/${BACKUP_NUMBER}
+      rm -rf ${LOCAL_BACKUP}/${BACKUP_NUMBER}
     done
   fi
+}
+
+sync_local_and_offsite()
+{
+  echo "Syncing to BB01:/srv/users/brianh"
+  rsync -hav --delete --progress ${LOCAL_BACKUP}/ ${OFFSITE_BACKUP}/
 }
 
 process_arguments()
@@ -52,9 +58,12 @@ process_arguments()
 }
 #==========================================END FUNCTIONS============================================
 BACKUP_DIR=/home/brianh/.backup
+LOCAL_BACKUP=/home/brianh/.backup
+OFFSITE_BACKUP=/user/brianh/.backup
+
 DATE=$(date +%s)
 
-COPY_LIST="bin test test2"
+BACKUP_LIST="bin DevOps test test2"
 
 NUMBER_TO_KEEP=5
 
@@ -67,4 +76,4 @@ process_arguments "$@"
 create_backup_loc
 back_it_up
 remove_old_backups
-
+sync_local_and_offsite
