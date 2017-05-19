@@ -1,4 +1,10 @@
 #!/bin/sh -e
+#This snipppet gets the Jira issue numbers from my cleverly named direcoties and finds the title of the jira issue.
+#
+#This could be used to print out information on the title in the index, what are the files, what do the files say they do, what is the jira issue supposed to be working towards.
+#
+#ls -d test/* test2/* | sort -k 2 -t \/ -V | while read ISSUE; do J_I=${ISSUE#*/}; case ${J_I} in *[0-9]*) J_I=${J_I%\.*}; J_I=${J_I%/};J_I="$(echo "${J_I}"|grep -o '[a-zA-Z]*')-$(echo "${J_I}"| grep -o '[0-9]*')"; curl -s http://jira.cd-adapco.com/browse/${J_I} -utest:00test | grep '<title>' ;;esac;done
+
 
 #============================================FUNCTIONS==============================================
 usage()
