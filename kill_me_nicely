@@ -1,0 +1,2 @@
+gdb --batch --eval-command 'call exit(0)' --pid $PID
+
