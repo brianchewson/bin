@@ -132,6 +132,9 @@ for JENKINS in ${JENKINS_LIST}; do
         ssh root@${JENKINS}.${FQDN_SUFFIX} "su - jenkins -c \"ssh -oStrictHostKeyChecking=no test@${MACHINE} 'exit'\""
 
         ssh root@${JENKINS}.${FQDN_SUFFIX} "su - jenkins -c \"ssh -oStrictHostKeyChecking=no test@${MACHINE}.${FQDN_SUFFIX} 'exit'\""
+
+        #new jenkins security wants a rsa key in the known_hosts
+        ssh root@${JENKINS} "su - jenkins -c \"ssh-keyscan ${MACHINE} | grep rsa >> .ssh/known_hosts \""
       else
         err_echo "WARNING: Cannot access ${MACHINE}.${FQDN_SUFFIX}"
         err_echo "WARNING: Did you forget to turn it on?"
