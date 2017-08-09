@@ -270,7 +270,7 @@ def url_request(url):
     if 'starci' in url:
         auth_token = ('test', '88257d321f7afe0920bfc9ac894073b1')
     elif ('jira' in url) or ('gitweb' in url):
-        auth_token = ('test', '00test')
+        auth_token = ('test', 'test')
 
     try:
         ret_val = requests.request("GET", url, auth=auth_token)
