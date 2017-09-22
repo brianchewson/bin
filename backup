@@ -57,13 +57,12 @@ process_arguments()
   done
 }
 #==========================================END FUNCTIONS============================================
-BACKUP_DIR=/home/brianh/.backup
 LOCAL_BACKUP=/home/brianh/.backup
 OFFSITE_BACKUP=/user/brianh/.backup
 
 DATE=$(date +%s)
 
-BACKUP_LIST="bin DevOps test test2"
+BACKUP_LIST="bin DevOps test test2 .ssh .bashrc"
 
 NUMBER_TO_KEEP=5
 
