@@ -8,7 +8,7 @@ usage()
 USAGE: $0 
        #I don't take any arguments
 "
-  echo $*
+  echo "$*"
   exit 1
 }
 
@@ -27,6 +27,25 @@ create_backup_loc()
     echo "Making dir ${LOCAL_BACKUP}/${DATE}"
     mkdir -p ${LOCAL_BACKUP}/${DATE}
   fi 
+
+  if [ ! -d ${OFFSITE_BACKUP} ]; then
+    usage "You need to have ${OFFSITE_BACKUP} available 
+Try
+# sudo mkdir -p ${OFFSITE_BACKUP}"
+  fi
+
+# user brianadm =/= brianh, I don't want 2 backups, I could either a) force user to be brianh or b) see if this check is uneccessary
+#  if [ ! -w ${OFFSITE_BACKUP} ]; then
+#    usage "You ($USER) need to be able to write to ${OFFSITE_BACKUP}
+##Try
+## sudo chown -R $USER:wheel ${OFFSITE_BACKUP%/*}"   
+#  fi
+
+  if ! grep ${OFFSITE_BACKUP%/*} /proc/self/mounts; then
+    usage "You need to mount the drive
+Try
+# sudo mount ${MOUNT} ${OFFSITE_BACKUP%/*}"
+  fi
 }
 
 remove_old_backups()
@@ -41,7 +60,7 @@ remove_old_backups()
 
 sync_local_and_offsite()
 {
-  echo "Syncing to BB01:/srv/users/brianh"
+  echo "Syncing to ${MOUNT}"
   rsync -hav --delete --progress ${LOCAL_BACKUP}/ ${OFFSITE_BACKUP}/
 }
 
@@ -57,8 +76,9 @@ process_arguments()
   done
 }
 #==========================================END FUNCTIONS============================================
-LOCAL_BACKUP=/home/brianh/.backup
+LOCAL_BACKUP=${HOME}/.backup
 OFFSITE_BACKUP=/user/brianh/.backup
+MOUNT=bb01:/srv/users/brianh
 
 DATE=$(date +%s)
 
