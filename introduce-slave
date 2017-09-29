@@ -150,6 +150,7 @@ done
 
 for MACHINE in ${MACHINE_LIST}; do
   # check if the machine is available
+  echo "${MACHINE}-------------------------------------------------------------------------"
   if ssh -oBatchMode=yes -q test@${MACHINE}.${FQDN_SUFFIX} 'exit' > /dev/null; then
     if [ "${QUIET_MODE}" = "FALSE" ]; then
       echo "Adding public keys to known_hosts on ${MACHINE}"
