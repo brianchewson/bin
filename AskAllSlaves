@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 #============================================FUNCTIONS==============================================
 usage()
@@ -9,6 +9,7 @@ WARNING: MAKE SURE TO WRAP YOUR ACTION/LABEL IN SINGLE QUOTES
 USAGE: $0 -a 'ACTION' -l 'LABEL' -j JENKINS_URL|-r|-d
   -a     #defines the list of actions to perform on the remote host 
   -d     #use the development Jenkins (${DEV_URL})
+  -g     #use git workflow jenkins (${GW_URL})
   -j     #specify the exact Jenkins URL
   -l     #Use a label restriction, as in Jenkins (eg lin64&&test)
   -r     #use the release Jenkins (${REL_URL})
@@ -88,6 +89,10 @@ process_arguments()
         JENKINS_URL=${DEV_URL}
         AUTH_TOKEN=test:88257d321f7afe0920bfc9ac894073b1
       ;;
+      -g|-G)
+        JENKINS_URL=${GW_URL}
+        AUTH_TOKEN=test:3f3e8c7f055223bc6a9c82be48191fdd
+      ;;
       -j|-J)
         JENKINS_URL=$2
       ;;
@@ -115,12 +120,16 @@ process_arguments()
   if [ -z "${JENKINS_URL}" ]; then
     usage "No JENKINS instance specified"
   fi
+  if [ -z "${AUTH_TOKEN}" ]; then
+    usage "No CREDENTIALS specified to gain access to ${JENKINS_URL}"
+  fi
 }
 #==========================================END FUNCTIONS============================================
 
 ACTION=""
 ASK_ALL=true
 DEV_URL="http://starci.lebanon.cd-adapco.com:9090"
+GW_URL="http://devci.lebanon.cd-adapco.com"
 JENKINS_URL=""
 PASSTHROUGH_ARGS=""
 REL_URL="http://relci.lebanon.cd-adapco.com"
