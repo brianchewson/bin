@@ -99,20 +99,23 @@ process_arguments()
       ;;
       -a|-A)
         NODE_LIST="${NODE_LIST} castor"
+        NODE_LIST="${NODE_LIST} win7-cosim01"
         NODE_LIST="${NODE_LIST} cloud009"
         NODE_LIST="${NODE_LIST} cloud011"
-        NODE_LIST="${NODE_LIST} devci"
+#WILL REQUIRE SPECIAL ACCESS TO UPDATE BY GAINING ENTRY AS ROOT FIRST< THEN SU TO JENKINS AND THEN CONTACTING THE FOREIGN MACHINE
+#        NODE_LIST="${NODE_LIST} devci" 
         NODE_LIST="${NODE_LIST} dslicense"
         NODE_LIST="${NODE_LIST} gru"
-        NODE_LIST="${NODE_LIST} intci"
-        NODE_LIST="${NODE_LIST} intci-dev"
+#        NODE_LIST="${NODE_LIST} intci"
+#        NODE_LIST="${NODE_LIST} intci-dev"
         NODE_LIST="${NODE_LIST} intdata"
+        NODE_LIST="${NODE_LIST} localhost"
         NODE_LIST="${NODE_LIST} nas02"
         NODE_LIST="${NODE_LIST} pollux"
-        NODE_LIST="${NODE_LIST} relci"
+#        NODE_LIST="${NODE_LIST} relci"
         NODE_LIST="${NODE_LIST} SELF"
         NODE_LIST="${NODE_LIST} starci"
-        NODE_LIST="${NODE_LIST} sv650"
+#        NODE_LIST="${NODE_LIST} sv650"
         NODE_LIST="${NODE_LIST} testhome"
         NODE_LIST="${NODE_LIST} winfile03"
       ;;
