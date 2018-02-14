@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash 
 GIT_REPO=$1
 CURRENT_DIR=$(pwd)
 TYPE=""
