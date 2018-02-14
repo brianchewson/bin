@@ -1,11 +1,13 @@
-#!/bin/bash
-GIT=$1
+#!/bin/bash -x
+GIT_REPO=$1
 CURRENT_DIR=$(pwd)
 TYPE=""
 #============================================FUNCTIONS==============================================
 usage()
 {
-  echo "Usage: $0  GIT_REPO
+  err_echo "$0 is a tool to destroy a git workspace and any complications therein and reclone
+-----------------------------------------------------------------------bch
+USAGE: $0  GIT_REPO 
   GIT_REPO   #this should be a local working copy (clone) of a git/gitfat repo
 "
   echo $*
@@ -14,33 +16,50 @@ usage()
 
 }
 
+err_echo()
+{
+  echo "$@" 1>&2
+}
+
+get_git_url()
+{
+  if [ -f ${GIT_REPO}/.git/config ]; then
+    GIT_URL=$(grep -m 1 url ${GIT_REPO}/.git/config)   
+    GIT_URL=${GIT_URL#*=}
+  fi
+
+  if [ -z "${GIT_URL}" ]; then
+    usage "No url for git repo found at ${GIT_REPO}/.git/config"
+  fi
+}
+
 is_git_repo()
 {
-  if [ ! -d ${CURRENT_DIR}/${GIT} ]; then
-    usage "No directory exists at ${CURRENT_DIR}/${GIT}"
+  if [ ! -d ${GIT_REPO} ]; then
+    usage "No directory exists at ${GIT_REPO}"
   fi
-  if [ ! -d ${CURRENT_DIR}/${GIT}/.git ]; then
-    usage "${CURRENT_DIR}/${GIT} is not a git repository"
+  if [ ! -d ${GIT_REPO}/.git ]; then
+    usage "${GIT_REPO} is not a git repository"
   fi
   TYPE=GIT
 }
 
 is_git_fat_repo()
 {
-  if [ -f  ${CURRENT_DIR}/${GIT}/.gitfat ]; then
+  if [ -f  ${GIT_REPO}/.gitfat ]; then
     TYPE=FAT
   fi
 }
 
 nuke_repo()
 {
-  rm -rf ${GIT}
+  rm -rf ${GIT_REPO}
 }
 
 remake_repo()
 {
-  git clone git@stash:ups/${GIT}.git
-  cd ${GIT}
+  git clone ${GIT_URL}
+  cd ${GIT_REPO}
   if [ "$TYPE" = "FAT" ]; then
     git fat init
   fi
@@ -49,13 +68,16 @@ remake_repo()
   cd ${CURRENT_DIR}
 }
 #==========================================END=FUNCTIONS============================================
-GIT=${GIT%/}
+REPO_NAME=${GIT_REPO%/}
+GIT_REPO="${CURRENT_DIR}/${REPO_NAME}"
 is_git_repo
+get_git_url
 is_git_fat_repo
 nuke_repo
 remake_repo
 
-if [ "${GIT}" = "star" ]; then
+# this is a security requirement
+if [ "${REPO_NAME}" = "star" ]; then
   cd ${CURRENT_DIR}
-  chmod 750 ${GIT}
+  chmod 750 ${REPO_NAME}
 fi
