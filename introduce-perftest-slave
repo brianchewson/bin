@@ -1,0 +1,125 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to get an agent's known_hosts file full of Self connection information
+This prevents job breakage at use time, by preventing password entry
+-----------------------------------------------------------------------bch
+USAGE: $0 [-f FQDN_SUFFIX] -m MACHINE -n NODES [-q] [-u USER_NAME]
+  -f     # FQDN_SUFFIX, specify the domain where machine and server are
+         # eg -f lebanon.cd-adapco.com [default option]
+  -m     # MACHINE, specify the machine you'd like to introduce to the various nodes
+         # specify multiple machines with multiple -m (eg -m cent66-build35 -m cent66-build36)
+         # you may also try -m \"cent66-build35 cent66-build36\"
+  -q     # QUIET_MODE, don't tell me about successes
+  -u     # USER_NAME, specify test or perftest (default is perftest)
+
+------------------------------------------------------------------------
+"
+  echo $*
+  exit 1
+}
+
+err_echo()
+{
+  echo "$@" 1>&2
+}
+
+verify_dependencies()
+{	
+  for REQUIRED_FILE in ${REQUIRED_FILES}; do
+    if [ ! -f ${WORKSPACE}/${REQUIRED_FILE} ]; then
+      usage "${0##*/} requires a missing file, ${REQUIRED_FILE}, to run,
+Please add ${REQUIRED_FILE} to ${WORKSPACE} to continue"
+    fi
+  done
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -f|-F)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for FQDN_SUFFIX flag (-f)"
+        fi
+        #cut off leading litteral dot
+        FQDN_SUFFIX=${2#\.} 
+        shift
+      ;;
+      -m|-M)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for MACHINE flag (-m)"
+        fi
+        MACHINE_LIST="${MACHINE_LIST} ${2}"
+        shift
+      ;;
+      -q|-Q)
+        QUIET_MODE=TRUE
+      ;;
+      -u|-U)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for USER_NAME flag (-u)"
+        fi
+        USER_NAME="${2}"
+        shift
+      ;;
+    esac
+    shift
+  done
+  for LIST in MACHINE_LIST USER_NAME; do
+    if [ -z "${!LIST}" ]; then
+      usage "No ${LIST} specified"
+    fi
+  done
+
+  REQUIRED_FILES=""
+  if [ -n "${REQUIRED_FILES}" ]; then
+    verify_dependencies 
+  fi
+}
+#==========================================END FUNCTIONS============================================
+if [ -z "${WORKSPACE}" ]; then
+  WORKSPACE=$(pwd)
+fi
+
+FQDN_SUFFIX="lebanon.cd-adapco.com"
+JENKINS_LIST=""
+MACHINE_LIST=""
+NODE_LIST="127.0.0.1 localhost SELF"
+QUIET_MODE=FALSE
+USER_NAME=perftest
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
+
+process_arguments "$@"
+
+for MACHINE in ${MACHINE_LIST}; do
+  if [ "${QUIET_MODE}" = "FALSE" ]; then
+    echo "Checking remote file system home directory on ${MACHINE}"
+  fi
+  if ssh ${USER_NAME}@${MACHINE}.${FQDN_SUFFIX} 'df -l .' &> /dev/null; then
+    if [ "${QUIET_MODE}" = "FALSE" ]; then
+      echo "Adding autonomous keys to known_hosts on ${MACHINE}"
+    fi
+    for NODE in ${NODE_LIST}; do
+      if [ "${NODE}" = "SELF" ]; then
+        NODE=${MACHINE}.${FQDN_SUFFIX}
+      fi
+      echo "${NODE}-------------------------------------------------------------------------"
+      if [ "${QUIET_MODE}" = "FALSE" ]; then
+        echo "Adding ${NODE} to ${MACHINE} known_hosts"
+      fi
+
+      ssh ${USER_NAME}@${MACHINE}.${FQDN_SUFFIX} "ssh -o StrictHostKeyChecking=no ${NODE} 'exit'; exit"
+    done
+  else
+    echo "Remote file system is networked, I WILL NOT write to a share .ssh/known_hosts file, it will cause confusion"
+  fi
+done
