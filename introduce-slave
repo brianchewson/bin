@@ -19,7 +19,7 @@ USAGE: $0 [-f FQDN_SUFFIX] -m MACHINE -n NODES [-q]
   -q     # QUIET_MODE, don't tell me about successes
 
 ------------------------------------------------------------------------
-  -a     # LIST for all CI servers \"castor cloud009 cloud011 devci dslicense gru intci intci-dev intdata nas02 pollux relci SELF starci sv650 testhome winfile03\"
+  -a     # LIST for all CI servers \"castor cloud009 devci dslicense gru intci intci-dev intdata nas02 pollux relci SELF starci sv650 testhome winfile03\"
   THE SHORTLIST CAN BE COMBINED WITH OTHER NODE SPECIFICATIONS (eg -a -n foo, will add foo to the above list specified by -a)
 "
   echo $*
@@ -101,7 +101,6 @@ process_arguments()
         NODE_LIST="${NODE_LIST} castor"
         NODE_LIST="${NODE_LIST} win7-cosim01"
         NODE_LIST="${NODE_LIST} cloud009"
-        NODE_LIST="${NODE_LIST} cloud011"
 #WILL REQUIRE SPECIAL ACCESS TO UPDATE BY GAINING ENTRY AS ROOT FIRST< THEN SU TO JENKINS AND THEN CONTACTING THE FOREIGN MACHINE
 #        NODE_LIST="${NODE_LIST} devci" 
         NODE_LIST="${NODE_LIST} dslicense"
