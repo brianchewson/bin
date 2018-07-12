@@ -93,6 +93,10 @@ process_arguments()
         JENKINS_URL=${GW_URL}
         AUTH_TOKEN=test:3f3e8c7f055223bc6a9c82be48191fdd
       ;;
+      -i|-I)
+        JENKINS_URL=${INT_URL}
+        AUTH_TOKEN=test:2d3ed74578d566426d37c2ae6add8e0f
+      ;;
       -j|-J)
         JENKINS_URL=$2
       ;;
@@ -130,6 +134,7 @@ ACTION=""
 ASK_ALL=true
 DEV_URL="http://starci.lebanon.cd-adapco.com:9090"
 GW_URL="http://devci.lebanon.cd-adapco.com"
+INT_URL="http://intci.lebanon.cd-adapco.com"
 JENKINS_URL=""
 PASSTHROUGH_ARGS=""
 REL_URL="http://relci.lebanon.cd-adapco.com"
