@@ -6,10 +6,11 @@ usage()
   echo "$0 is a tool to get a piece of information from Jenkins slaves
 WARNING: MAKE SURE TO WRAP YOUR ACTION/LABEL IN SINGLE QUOTES
 --------------------------------------------------------------------------
-USAGE: $0 -a 'ACTION' -l 'LABEL' -j JENKINS_URL|-r|-d
+USAGE: $0 -a 'ACTION' -l 'LABEL' -j JENKINS_URL|-r|-d|-i
   -a     #defines the list of actions to perform on the remote host 
   -d     #use the development Jenkins (${DEV_URL})
   -g     #use git workflow jenkins (${GW_URL})
+  -i     #use integration jenkins (${INT_URL})
   -j     #specify the exact Jenkins URL
   -l     #Use a label restriction, as in Jenkins (eg lin64&&test)
   -r     #use the release Jenkins (${REL_URL})
