@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 #============================================FUNCTIONS==============================================
 usage()
@@ -108,7 +108,7 @@ process_arguments()
       ;;
       -r|-R)
         JENKINS_URL=${REL_URL}
-        AUTH_TOKEN=test:88ee9d3f17d7d2a7fa0a31a76e2bcf0f
+        AUTH_TOKEN=test:66a729e77080fc2285b362fdda2f6d33
       ;;
       *)
         PASSTHROUGH_ARGS="${PASSTHROUGH_ARGS} $1"
