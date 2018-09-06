@@ -114,6 +114,7 @@ process_arguments()
 #        NODE_LIST="${NODE_LIST} relci"
         NODE_LIST="${NODE_LIST} SELF"
         NODE_LIST="${NODE_LIST} starci"
+        NODE_LIST="${NODE_LIST} starmirror"
 #        NODE_LIST="${NODE_LIST} sv650"
         NODE_LIST="${NODE_LIST} testhome"
         NODE_LIST="${NODE_LIST} winfile03"
