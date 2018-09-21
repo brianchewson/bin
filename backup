@@ -78,7 +78,7 @@ process_arguments()
 #==========================================END FUNCTIONS============================================
 LOCAL_BACKUP=${HOME}/.backup
 OFFSITE_BACKUP=/user/brianh/.backup
-MOUNT=bb01:/srv/users/brianh
+MOUNT=nas03:/srv/users/brianh
 
 DATE=$(date +%s)
 
