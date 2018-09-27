@@ -6,14 +6,15 @@ usage()
   echo "$0 is a tool to get a piece of information from Jenkins slaves
 WARNING: MAKE SURE TO WRAP YOUR ACTION/LABEL IN SINGLE QUOTES
 --------------------------------------------------------------------------
-USAGE: $0 -a 'ACTION' -l 'LABEL' -j JENKINS_URL|-r|-d|-i
+USAGE: $0 -a 'ACTION' -l 'LABEL' -j JENKINS_URL|-r|-d|-i|-p
   -a     #defines the list of actions to perform on the remote host 
   -d     #use the development Jenkins (${DEV_URL})
   -g     #use git workflow jenkins (${GW_URL})
   -i     #use integration jenkins (${INT_URL})
-  -j     #specify the exact Jenkins URL
+  -j     #specify the exact Jenkins URL requires AUTH_TOKEN (not implemented)
   -l     #Use a label restriction, as in Jenkins (eg lin64&&test)
   -r     #use the release Jenkins (${REL_URL})
+  -p     #use the profiling Jenkins (${INT_DEV_URL})
 "
   echo $*
   exit 1
@@ -70,7 +71,7 @@ ssh_as_test()
   for SLAVE in ${SLAVE_LIST}; do
     echo -n "${SLAVE}: "
    
-    ssh ${PASSTHROUGH_ARGS} test@${SLAVE} "${ACTION}"
+    ssh ${PASSTHROUGH_ARGS} test@${SLAVE} "${ACTION}" ${PARALLEL}
   done
 
 }
@@ -106,9 +107,16 @@ process_arguments()
         ASK_ALL=false
         shift
       ;;
+      -p|-P)
+        JENKINS_URL=${INT_DEV_URL}
+        AUTH_TOKEN=test:02859465a6535f7ba6ce1380b0085e0d
+      ;;
       -r|-R)
         JENKINS_URL=${REL_URL}
         AUTH_TOKEN=test:66a729e77080fc2285b362fdda2f6d33
+      ;;
+      -z|-Z)
+        PARALLEL="&"
       ;;
       *)
         PASSTHROUGH_ARGS="${PASSTHROUGH_ARGS} $1"
@@ -136,8 +144,10 @@ ASK_ALL=true
 DEV_URL="http://starci.lebanon.cd-adapco.com:9090"
 GW_URL="http://devci.lebanon.cd-adapco.com"
 INT_URL="http://intci.lebanon.cd-adapco.com"
+INT_DEV_URL="http://intci-dev.lebanon.cd-adapco.com"
 JENKINS_URL=""
 PASSTHROUGH_ARGS=""
+PARALLEL=""
 REL_URL="http://relci.lebanon.cd-adapco.com"
 
 if [ $# -lt 1 ]; then
