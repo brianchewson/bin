@@ -23,29 +23,23 @@ back_it_up()
 
 create_backup_loc()
 {
-  if [ ! -d ${LOCAL_BACKUP}/${DATE} ]; then
-    echo "Making dir ${LOCAL_BACKUP}/${DATE}"
-    mkdir -p ${LOCAL_BACKUP}/${DATE}
-  fi 
-
   if [ ! -d ${OFFSITE_BACKUP} ]; then
     usage "You need to have ${OFFSITE_BACKUP} available 
 Try
 # sudo mkdir -p ${OFFSITE_BACKUP}"
   fi
 
-# user brianadm =/= brianh, I don't want 2 backups, I could either a) force user to be brianh or b) see if this check is uneccessary
-#  if [ ! -w ${OFFSITE_BACKUP} ]; then
-#    usage "You ($USER) need to be able to write to ${OFFSITE_BACKUP}
-##Try
-## sudo chown -R $USER:wheel ${OFFSITE_BACKUP%/*}"   
-#  fi
-
   if ! grep ${OFFSITE_BACKUP%/*} /proc/self/mounts; then
     usage "You need to mount the drive
 Try
 # sudo mount ${MOUNT} ${OFFSITE_BACKUP%/*}"
   fi
+
+  if [ ! -d ${LOCAL_BACKUP}/${DATE} ]; then
+    echo "Making dir ${LOCAL_BACKUP}/${DATE}"
+    mkdir -p ${LOCAL_BACKUP}/${DATE}
+  fi 
+
 }
 
 remove_old_backups()
