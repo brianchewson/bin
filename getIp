@@ -1,0 +1,7 @@
+for VM in $@; do
+    if nslookup ${VM} > /dev/null; then
+        echo "${VM} : $(nslookup ${VM} | grep . | tail -n 1 | cut -d ' ' -f 2)"
+    else
+        echo "${VM} : No records"
+    fi
+done
