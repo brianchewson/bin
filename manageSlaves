@@ -1,0 +1,169 @@
+#!/bin/sh -e
+
+#============================================FUNCTIONS==============================================
+usage()
+{
+  echo "$0 is a tool to get all the loops that match on a keyword and open them in firefox, to kill in the queue or alter the configs (but there is another script to automate that)
+-----------------------------------------------------------------------bch
+USAGE: $0 -g WORD -v WORD_TO_EXCLUDE -s 'PAGE' [-f|-c] -j JENKINS_URL|-r|-d
+  -c     #use the chrome browser
+  -d     #use the development Jenkins (${DEV_URL})
+  -f     #use the firefox browser (default)
+  -g     #represents the word you want to look for, ie win64, moving, dev
+         # define multiple words with multiple -g arguments
+  -j     #specify the exact Jenkins URL
+  -r     #use the release Jenkins (${REL_URL})
+  -s     #specify a specific jenkins subpage (ie configure)
+  -v     #use to ignore a word or part of a word, ie _np
+         # define multiple ignores with multiple -v arguments
+"
+  echo $*
+  exit 1
+}
+
+get_all_job_names()
+{
+  curl -s "${JENKINS_URL}/api/xml?tree=jobs\[name\]" | tr '<' '\n' | grep ^name | cut -d '>' -f 2 > ${OUT_FILE}
+  JOB_COUNT=$(wc -l < ${OUT_FILE})
+}
+
+get_all_jobs_which_match_our_criteria()
+{
+  for GREP_WORD in ${GREP_LIST}; do
+    grep -- ${GREP_WORD} ${OUT_FILE} > ${TMP_FILE} || true
+    if [ "$(wc -l < ${TMP_FILE})" -eq 0 ]; then
+      echo "${GREP_WORD} results in 0 Jenkins Loops. Skipping"
+    else
+      mv ${TMP_FILE} ${OUT_FILE}
+    fi
+  done
+
+  sort -u ${OUT_FILE} -o ${OUT_FILE}
+}
+
+eliminate_jobs_which_we_want_to_void()
+{
+  for VOID_WORD in ${VOID_LIST}; do
+    grep -v -- ${VOID_WORD} ${OUT_FILE} > ${TMP_FILE} || true
+    if [ "$(wc -l < ${TMP_FILE})" -eq 0 ]; then
+      echo "${VOID_WORD} results in 0 Jenkins Loops. Skipping"
+    else
+      mv ${TMP_FILE} ${OUT_FILE}
+    fi
+  done
+
+  sort -u ${OUT_FILE} -o ${OUT_FILE}
+}
+
+open_jobs_in_browser()
+{
+  case ${BROWSER} in
+    chrome)
+      google-chrome --user-data-dir 
+    ;;
+    firefox)
+      firefox -new-window about:newTab
+    ;;
+  esac
+  
+  ${NEW_BROWSER_WINDOW}
+  sleep 1 
+  while read JOB; do
+    case ${BROWSER} in
+      firefox)
+        firefox ${JENKINS_URL}/job/${JOB}/${SUBPAGE}
+      ;;
+      chrome)
+        google-chrome ${JENKINS_URL}/job/${JOB}/${SUBPAGE}
+      ;;
+    esac
+  done < ${OUT_FILE}
+}
+
+process_arguments()
+{
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+      ;;
+      -c|-C)
+        BROWSER=chrome
+      ;;
+      -d|-D)
+        JENKINS_URL=${DEV_URL}
+      ;;
+      -f|-F)
+        BROWSER=firefox
+      ;;
+      -g|-G)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for WORD flag (-g)"
+        fi
+        GREP_LIST="${GREP_LIST} $2"
+        shift
+      ;;
+     -j|-J)
+        JENKINS_URL=$2
+      ;;
+      -r|-R)
+        JENKINS_URL=${REL_URL}
+      ;;
+      -s|-S) 
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for SUBPAGE flag (-s)"
+        fi
+        SUBPAGE=$2
+        shift
+      ;;
+      -v|-V)
+        if [ -z "$2" ]; then
+          usage "Improper number of arguments supplied for WORD flag (-v)"
+        fi
+        VOID_LIST="${VOID_LIST} $2"
+        shift
+      ;;
+    esac
+    shift
+  done
+  if [ -z "$GREP_LIST" ]; then
+    usage "No WORD specified"
+  fi
+  if [ -z "${JENKINS_URL}" ]; then
+    usage "No JENKINS instance specified"
+  fi
+
+}
+#==========================================END FUNCTIONS============================================
+
+BROWSER="firefox"
+DATE=$(date +%s)
+DEV_URL="http://starci.lebanon.cd-adapco.com:9090"
+FIRST_JOB=TRUE
+GREP_LIST=""
+JENKINS_URL=""
+JOB_COUNT=""
+OUT_FILE=${DATE}.out
+REL_URL="http://relci.lebanon.cd-adapco.com"
+TMP_FILE=${DATE}.tmp
+VOID_LIST=""
+
+if [ $# -lt 1 ]; then
+  usage "No arguments specified"
+fi
+
+process_arguments "$@"
+
+get_all_job_names
+get_all_jobs_which_match_our_criteria
+if [ -n "${VOID_LIST}" ]; then
+  eliminate_jobs_which_we_want_to_void
+fi
+
+if [ $(wc -l < ${OUT_FILE}) -lt ${JOB_COUNT} ]; then
+  open_jobs_in_browser
+else
+  echo "Abort: Trying to open ${JOB_COUNT} jobs"
+fi
+
+rm -f ${OUT_FILE} ${TMP_FILE}
