@@ -1,4 +1,4 @@
-#!/bin/sh -ex
+#!/bin/sh -e
 
 #============================================FUNCTIONS==============================================
 usage()
@@ -33,7 +33,7 @@ get_list_of_all_files()
     echo "Finding all files, this will take some time"
     ssh -n root@nas04 "cd ${ARCHIVE_PATH}; find -mindepth 1 -maxdepth 1 -type d | grep -v broken-symlinks-we-want-keep | cut -d / -f 2  | sort -h | while read VERS; do find \${VERS} -type f -exec stat -c \"%s %n\" {} \;;done >> /tmp/${ARCHIVE_BRANCH}.${DATE}"
     echo "Transferring list"
-    scp root@nas04:/tmp/${ARCHIVE_BRANCH}.${DATE} ${WORKSPACE}/${ALL_FILES_LIST}
+    scp root@nas04:/tmp/${ARCHIVE_BRANCH}.${DATE} ${ALL_FILES_LIST}
 }
 
 get_list_of_file_types()
@@ -154,12 +154,13 @@ process_arguments()
   fi
 }
 #==========================================END FUNCTIONS============================================
-#DATE=$(date +%s)
-DATE=1569874413
+DATE=$(date +%s)
 if [ -z "${WORKSPACE}" ]; then
-  WORKSPACE=/tmp/${DATE}
+    WORKSPACE=/tmp/${DATE}
 fi
-
+if [ ! -d "${WORKSPACE}" ]; then
+    mkdir ${WORKSPACE}   
+fi
 
 ARCHIVE_BRANCH="development"
 OUTPUT_TYPE="SIZE"
@@ -175,8 +176,8 @@ ALL_FILES_LIST=${WORKSPACE}/all.files
 FILE_TYPES=${WORKSPACE}/file.types
 VERSION_LIST=${WORKSPACE}/version.list
 
-#get_list_of_all_files
-#get_list_of_file_types
-#get_list_of_versions
-#break_out_files_by_version
+get_list_of_all_files
+get_list_of_file_types
+get_list_of_versions
+break_out_files_by_version
 print_table 
