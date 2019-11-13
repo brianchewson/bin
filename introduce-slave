@@ -115,7 +115,7 @@ process_arguments()
 #        NODE_LIST="${NODE_LIST} relci"
         NODE_LIST="${NODE_LIST} SELF"
         NODE_LIST="${NODE_LIST} starci"
-        NODE_LIST="${NODE_LIST} starmirror"
+#        NODE_LIST="${NODE_LIST} starmirror"
 #        NODE_LIST="${NODE_LIST} sv650"
         NODE_LIST="${NODE_LIST} testhome"
         NODE_LIST="${NODE_LIST} winfile03"
@@ -162,6 +162,7 @@ for MACHINE in ${MACHINE_LIST}; do
     if [ "${QUIET_MODE}" = "FALSE" ]; then
       echo "Adding public keys to known_hosts on ${MACHINE}"
     fi
+echo "${NODE_LIST}"
     for NODE in ${NODE_LIST}; do
       if [ "${NODE}" = "SELF" ]; then
         NODE=${MACHINE}
