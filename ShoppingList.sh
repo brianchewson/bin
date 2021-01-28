@@ -63,7 +63,8 @@ if [ -z "${WORKSPACE}" ]; then
 fi
 
 N=1
-OUTFILE="ShoppingList.html"
+OUTFILE="/home/brianh/ShoppingList.html"
+SOURCEFILE="/home/brianh/MasterList.html"
 
 process_arguments "$@"
 
@@ -77,7 +78,13 @@ ITEM="${ITEM//<*>/ }"
 
 # add the item to the list, read the next item
 while [ -n "$ITEM" ]; do
-  echo "<tr><td>${ITEM}</td><td>&nbsp;&nbsp;&nbsp;</td></tr>" >> ${OUTFILE}
+    if grep -q "${ITEM}" ${SOURCEFILE}; then
+        grep "${ITEM}" ${SOURCEFILE}
+        grep "${ITEM}" ${SOURCEFILE} >> ${OUTFILE}
+    else
+        echo "I don't have a record for ${ITEM}"
+        echo "<tr><td>${ITEM}</td><td>&nbsp;&nbsp;&nbsp;</td><td>&nbsp;&nbsp;&nbsp;</td></tr>" >> ${OUTFILE}
+    fi
   let N+=1
   read -p "Item ${N}: " ITEM
   #sanitize ITEM

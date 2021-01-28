@@ -1,0 +1,13 @@
+#!/bin/bash
+ALL_ARGS="$@"
+DATE=$(date +%s)
+TEMP_FILE=/tmp/${DATE}
+
+echo "${ALL_ARGS}" > ${TEMP_FILE}
+sed -i 's/ /\n/g' ${TEMP_FILE}
+sort -o ${TEMP_FILE} -u ${TEMP_FILE}
+cat ${TEMP_FILE} | tr '\n' ' '
+echo ""
+
+rm -f ${TEMP_FILE}
+

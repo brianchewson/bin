@@ -74,7 +74,7 @@ fi
 
 process_arguments "$@"
 
-TESTDATA=/home/testdata/${BRANCH}
+TESTDATA=/home/testdata/backward/${BRANCH}
 
 #NEED to figure out how to validate the folders on the branch?
 #check if at least one folder with that name exists
@@ -90,6 +90,8 @@ TESTDATA=/home/testdata/${BRANCH}
 for SIM_FILE in ${TESTDATA}/*/${MODULE}/${SUITE}/*/*/*.sim; do
   SIM_FOLDER=${SIM_FILE#${TESTDATA}/}
   SIM_FOLDER=${SIM_FOLDER%/*}
-  mkdir -p ~/reproducing/${SIM_FOLDER}
-  cp $SIM_FILE ~/reproducing/${SIM_FOLDER}
+  #mkdir -p ~/reproducing/${SIM_FOLDER}
+  #cp $SIM_FILE ~/reproducing/${SIM_FOLDER}
+  mkdir -p /tmp/EMAG_1951/${SIM_FOLDER}
+  cp $SIM_FILE /tmp/EMAG_1951/${SIM_FOLDER}
 done
