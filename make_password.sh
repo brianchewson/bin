@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -ex
 
 #============================================FUNCTIONS==============================================
 usage()
@@ -34,7 +34,7 @@ random_number()
     #                                        only make as wide as the max value
     #                                                                 take the first line
     #                                                                            trim leading zeroes
-    RET_VAL=$(head /dev/urandom | tr -dc 0-9 | fold -w ${WIDTH} | head -n 1 | sed 's/^0*//')
+    RET_VAL=$(head /dev/urandom | tr -dc 0-9 | fold -w ${WIDTH} | head -n 1 | bc) 
   done
   echo "$RET_VAL"
 }
