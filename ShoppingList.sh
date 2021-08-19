@@ -93,3 +93,8 @@ done
 
 #footer info
 echo -e "</table>\n</center>\n</body>\n</html>" >> ${OUTFILE}
+
+cat ${OUTFILE} >> ${SOURCEFILE}
+sed -i 's/./\L&/g' ${SOURCEFILE}
+sort -u ${SOURCEFILE} -o ${SOURCEFILE}
+
