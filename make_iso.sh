@@ -13,6 +13,6 @@ rm -f ${AUTO_INST}
 
 scp ${ISO} root@images:/srv/images/SUSE/${ISO}
 
-if [ -d autoinst-bak]; then
-  mv ${ISO} autoinst-bak/${DATE}-${ISO}
+if [ -d backups ]; then
+  mv ${ISO} backups/${DATE}-${ISO}
 fi
