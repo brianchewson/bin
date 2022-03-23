@@ -8,7 +8,7 @@ usage()
   err_echo "$0 is a tool to destroy a git workspace and any complications therein and reclone
 -----------------------------------------------------------------------bch
 USAGE: $0  GIT_REPO 
-  GIT_REPO   #this should be a local working copy (clone) of a git/gitfat repo
+  GIT_REPO   #this should be a local working copy (clone) of a git/gitlfs repo
 "
   echo $*
 
@@ -44,10 +44,10 @@ is_git_repo()
   TYPE=GIT
 }
 
-is_git_fat_repo()
+is_git_lfs_repo()
 {
-  if [ -f  ${GIT_REPO}/.gitfat ]; then
-    TYPE=FAT
+  if [ -d  ${GIT_REPO}/.git/lfs ]; then
+    TYPE=LFS
   fi
 }
 
@@ -58,11 +58,11 @@ nuke_repo()
 
 remake_repo()
 {
+  if [ "$TYPE" = "LFS" ]; then
+    git lfs install --skip-smudge
+  fi
   git clone ${GIT_URL}
   cd ${GIT_REPO}
-  if [ "$TYPE" = "FAT" ]; then
-    git fat init
-  fi
   git pull
   git status
   cd ${CURRENT_DIR}
@@ -72,7 +72,7 @@ REPO_NAME=${GIT_REPO%/}
 GIT_REPO="${CURRENT_DIR}/${REPO_NAME}"
 is_git_repo
 get_git_url
-is_git_fat_repo
+is_git_lfs_repo
 nuke_repo
 remake_repo
 
