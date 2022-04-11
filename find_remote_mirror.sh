@@ -19,12 +19,12 @@ err_echo()
 
 get_the_response()
 {
-    curl -s ${INFO_URL}${SURNAME} > ${RESULT}
+    curl -o ${RESULT} -s "${INFO_URL}${SURNAME}"
 }
 
 print_table()
 {
-    cat ${RESULT}
+    cat ${TABLE}
 }
 
 reformat_the_result()
@@ -40,6 +40,8 @@ reformat_the_result()
     sed -i 's/<[^>]*>/|/g' ${TABLE}
     # replace multi-pipes with uni-pipes
     sed -i 's/|\+/|/g' ${TABLE}
+    
+    dos2unix ${TABLE}
 }
 
 verify_dependencies()
