@@ -30,12 +30,14 @@ def setup():
         logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
     logger.debug('Parsed arguments')
 
+    logger.debug('check arguments')
     if a.optional is not None:
         if not os.path.isdir(a.optional):
             fail_string = str(parser.print_help())
             fail_string = fail_string + '\nDir ' + a.optional + ' doesn\'t exist'
             usage(fail_string)
 
+    logger.debug('check for required files')
     required_files = []
     if required_files:
         verify_dependencies(required_files)
@@ -69,4 +71,3 @@ def main(args):
 
 if __name__ == "__main__":
     main(sys.argv)
-
