@@ -79,7 +79,7 @@ ssh_as_test()
   for SLAVE in ${SLAVE_LIST}; do
     echo -n "${SLAVE}: "
    
-    ssh ${PASSTHROUGH_ARGS} test@${SLAVE}.${FQDN} "${ACTION}"
+    ssh ${PASSTHROUGH_ARGS} test@${SLAVE}.${FQDN} "${ACTION}" ${PARALLEL}
   done
 
 }
@@ -131,6 +131,9 @@ process_arguments()
         JENKINS_URL=${TPB_URL}
         AUTH_TOKEN=test:16d7f836562ed9ea3c90403d4b1f76d0
       ;;
+      -z|-Z)
+        PARALLEL="&"
+      ;;
       *)
         PASSTHROUGH_ARGS="${PASSTHROUGH_ARGS} $1"
       ;;
@@ -158,6 +161,7 @@ DEV_URL="http://devci.dev.cd-adapco.com"
 G_W_URL="http://devci.lebanon.cd-adapco.com"
 INT_URL="http://intci.lebanon.cd-adapco.com"
 JENKINS_URL=""
+PARALLEL=""
 PASSTHROUGH_ARGS=""
 PRF_URL="http://intci-dev.lebanon.cd-adapco.com"
 REL_URL="http://relci.lebanon.cd-adapco.com"

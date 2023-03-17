@@ -41,7 +41,7 @@ reformat_the_result()
     # replace multi-pipes with uni-pipes
     sed -i 's/|\+/|/g' ${TABLE}
     
-    dos2unix ${TABLE}
+    dos2unix ${TABLE} 2> /dev/null
 }
 
 verify_dependencies()
