@@ -76,7 +76,7 @@ MOUNT=nas03:/srv/users/brianh
 
 DATE=$(date +%s)
 
-BACKUP_LIST="bin DevOps test test2 .ssh .bashrc"
+BACKUP_LIST="bin DevOps keys MGMT test update_jenkins_configs VMWIMP .ssh .bashrc privateData ProgramUnite"
 
 NUMBER_TO_KEEP=5
 
