@@ -1,1 +1,1 @@
-/home/brianh/gits/brianh/mirror-scripts/remove_baselines.sh
+/u/cd6sbg/gits/brianh/mirror-scripts/remove_baselines.sh

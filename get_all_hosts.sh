@@ -1,1 +1,1 @@
-/home/brianh/gits/brianh/mirror-scripts/get_all_hosts.sh
+/u/cd6sbg/gits/brianh/mirror-scripts/get_all_hosts.sh
