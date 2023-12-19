@@ -23,17 +23,6 @@ back_it_up()
 
 create_backup_loc()
 {
-  if [ ! -d ${OFFSITE_BACKUP} ]; then
-    usage "You need to have ${OFFSITE_BACKUP} available 
-Try
-# sudo mkdir -p ${OFFSITE_BACKUP}"
-  fi
-
-  if ! grep ${OFFSITE_BACKUP%/*} /proc/self/mounts; then
-    usage "You need to mount the drive
-Try
-# sudo mount ${MOUNT} ${OFFSITE_BACKUP%/*}"
-  fi
 
   if [ ! -d ${LOCAL_BACKUP}/${DATE} ]; then
     echo "Making dir ${LOCAL_BACKUP}/${DATE}"
@@ -71,12 +60,12 @@ process_arguments()
 }
 #==========================================END FUNCTIONS============================================
 LOCAL_BACKUP=${HOME}/.backup
-OFFSITE_BACKUP=/user/brianh/.backup
-MOUNT=nas03:/srv/users/brianh
+OFFSITE_BACKUP=brianh@nas03:/srv/users/brianh/.backup
 
 DATE=$(date +%s)
 
-BACKUP_LIST="bin DevOps keys MGMT test update_jenkins_configs VMWIMP .ssh .bashrc privateData ProgramUnite"
+BACKUP_LIST="bin DevOps keys MGMT test update_jenkins_configs VMWIMP .ssh .bashrc privateData Templates"
+
 
 NUMBER_TO_KEEP=5
 
