@@ -19,12 +19,12 @@ err_echo()
 
 get_the_response()
 {
-    curl -o ${RESULT} -s "${INFO_URL}${SURNAME}"
+    curl -o ${RESULT} -s "${INFO_URL}${SURNAME//\ /%7C}"
 }
 
 print_table()
 {
-    cat ${TABLE}
+    jq -r ".responseData[] | \"Employee: \(.employeeName)\", \"Office: \(.officeName)\", \"${DISPLAY_URL}/\(.employeeID)\"" ${RESULT}
 }
 
 reformat_the_result()
@@ -85,9 +85,10 @@ if [ -z "${WORKSPACE}" ]; then
     WORKSPACE=$(pwd)
 fi
 
-INFO_URL="https://infoweb.industrysoftware.automation.siemens.com/search/query.html?q="
+INFO_URL="https://corpdir.industrysoftware.automation.siemens.com/plmcorpdirii/api/employees?emp=true&aff=false&searchFields=firstname|lastname|nickname|edsnetid&term="
+DISPLAY_URL="https://corpdir.industrysoftware.automation.siemens.com/PLMCorpDirII/#/employeedetails"
 SURNAME=""
-RESULT=/tmp/infotable.txt
+RESULT=/tmp/infotable.json
 TABLE=${RESULT}.table
 
 if [ $# -lt 1 ]; then
@@ -97,5 +98,5 @@ fi
 process_arguments "$@"
 
 get_the_response
-reformat_the_result
+#reformat_the_result
 print_table
