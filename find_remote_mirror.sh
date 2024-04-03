@@ -66,6 +66,7 @@ process_arguments()
                     usage "Improper number of arguments supplied for SURNAME flag (-s)"
                 fi
                 SURNAME=$2
+                SURNAME=${SURNAME//á/a}
                 shift
             ;;
         esac

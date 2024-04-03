@@ -7,4 +7,6 @@ default_kde_session.sh
 fix_diff_page.sh
 push_cfengine.sh
 rebuild_me.sh
+SEC-SCANS/**
 sudox
+
