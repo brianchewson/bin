@@ -1,0 +1,14 @@
+#!/bin/bash -ex
+
+IN_TIME=${1}
+D_STAMP="2023-07-13 ${IN_TIME:0:2}:${IN_TIME:2:2}:00 EDT"
+T_STAMP=$(date -d "${D_STAMP}" +%s)
+
+OUTLIST="Asia/Beijing:ChinaStandardTime Asia/Kolkata:IST Egypt:EGY"
+
+for TIME in ${OUTLIST}; do
+    SHOWTIME=$(TZ=":${TIME%%:*}" date -d "@${T_STAMP}" +%H%M)
+    SHOWTIME="${SHOWTIME} ${TIME##*:}"
+    echo ${SHOWTIME}
+done
+
