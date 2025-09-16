@@ -62,7 +62,7 @@ process_arguments()
 LOCAL_BACKUP=${HOME}/.backup
 OFFSITE_BACKUP=brianh@nas03:/srv/users/brianh/.backup
 
-DATE=$(date +%s)
+DATE=$(date +%Y%m%d%H%M%S)
 
 BACKUP_LIST="bin DevOps keys MGMT test update_jenkins_configs VMWIMP .ssh .bashrc privateData Templates"
 

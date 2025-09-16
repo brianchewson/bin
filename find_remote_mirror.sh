@@ -87,7 +87,8 @@ if [ -z "${WORKSPACE}" ]; then
 fi
 
 INFO_URL="https://corpdir.industrysoftware.automation.siemens.com/plmcorpdirii/api/employees?emp=true&aff=false&searchFields=firstname|lastname|nickname|edsnetid&term="
-DISPLAY_URL="https://corpdir.industrysoftware.automation.siemens.com/PLMCorpDirII/#/employeedetails"
+#DISPLAY_URL="https://corpdir.industrysoftware.automation.siemens.com/PLMCorpDirII/#/employeedetails"
+DISPLAY_URL="https://go.industrysoftware.automation.siemens.com/corpdir/employeeDetails"
 SURNAME=""
 RESULT=/tmp/infotable.json
 TABLE=${RESULT}.table
