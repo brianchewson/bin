@@ -1,0 +1,1 @@
+/u/cd6sbg/gits/maylin/Jira-Migration-Tool/datacenter-to-cloud/sts-cloud/rest-api/shell/get-json-issue-from-cloud-jira.sh
