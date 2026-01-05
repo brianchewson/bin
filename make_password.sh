@@ -61,7 +61,28 @@ random_word()
   RANDOM_LINE=$(random_number ${MAX_VALUE})
 
   # print the line # from the file, (q)uit, and (d)elete remaining lines to be printed  
-  RET_VAL=$(sed "${RANDOM_LINE}q;d" ${WORD_LIST})
+  SEED_WORD=$(sed "${RANDOM_LINE}q;d" ${WORD_LIST})
+
+    # get the lenght of the word
+    SEED_LEN=${#SEED_WORD}
+    let SEED_LEN+=1
+    # pick a random number indicating the position of the capital letter (I want to leave an out so that there is 1/n+1 chances to have 0 changes to the word)
+    MODIFY_LETTER=$(random_number ${SEED_LEN})
+   
+    if [ ${MODIFY_LETTER} -lt ${#SEED_WORD} ]; then 
+        # get the letter at that number 
+        MOD_CHAR=${SEED_WORD:MODIFY_LETTER:1}
+        # embiggen it
+        MOD_CHAR=${MOD_CHAR^^}
+
+        # put the pre + letter + post together to get the new word
+        PRE=${SEED_WORD:0:MODIFY_LETTER}
+        POST=${SEED_WORD:MODIFY_LETTER+1}
+        RET_VAL="${PRE}${MOD_CHAR}${POST}"
+    else
+        RET_VAL=${SEED_WORD}   
+    fi
+
 
   echo "${RET_VAL}"
 }
