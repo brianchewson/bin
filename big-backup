@@ -33,8 +33,8 @@ create_backup_loc()
 
 remove_old_backups()
 {
-  if [ $(ls -1t ${LOCAL_BACKUP} | wc -l ) -gt ${NUMBER_TO_KEEP} ]; then
-    ls -1tr ${LOCAL_BACKUP} | head -n -${NUMBER_TO_KEEP} | while read BACKUP_NUMBER; do
+  if [ $(ls -1td ${LOCAL_BACKUP}/[0-9]* | wc -l ) -gt ${NUMBER_TO_KEEP} ]; then
+    ls -1trd ${LOCAL_BACKUP}/[0-9]* | head -n -${NUMBER_TO_KEEP} | while read BACKUP_NUMBER; do
       echo "Deleting Backup ${BACKUP_NUMBER}"
       rm -rf ${LOCAL_BACKUP}/${BACKUP_NUMBER}
     done
@@ -64,7 +64,7 @@ OFFSITE_BACKUP=brianh@nas03:/srv/users/brianh/.backup
 
 DATE=$(date +%Y%m%d%H%M%S)
 
-BACKUP_LIST="bin DevOps keys MGMT test update_jenkins_configs VMWIMP .ssh .bashrc privateData Templates"
+BACKUP_LIST=" bin DevOps keys MGMT test update_jenkins_configs VMWIMP .ssh .bashrc privateData Templates"
 
 
 NUMBER_TO_KEEP=5
@@ -76,6 +76,8 @@ NUMBER_TO_KEEP=5
 
 process_arguments "$@"
 create_backup_loc
+    7za a ${LOCAL_BACKUP}/${DATE}/sync.7z ~/.backup/sync -bb > ${LOCAL_BACKUP}/${DATE}/sync.log
+    du -sh ${LOCAL_BACKUP}/${DATE}/sync.7z
 back_it_up
 remove_old_backups
 sync_local_and_offsite
