@@ -1,1 +1,1 @@
-/home/brianh/gits/brianh/mirror-scripts/mirror-free-space.sh
+/u/cd6sbg/gits/brianh/mirror-scripts/mirror-free-space.sh

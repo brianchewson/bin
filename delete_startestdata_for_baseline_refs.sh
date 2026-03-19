@@ -1,1 +1,1 @@
-/home/brianh/gits/brianh/mirror-scripts/delete_startestdata_for_baseline_refs.sh
+/u/cd6sbg/gits/brianh/mirror-scripts/delete_startestdata_for_baseline_refs.sh
