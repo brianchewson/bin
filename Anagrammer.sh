@@ -84,7 +84,8 @@ if [ -z "${WORKSPACE}" ]; then
     WORKSPACE=$(pwd)
 fi
 
-DICTIONARY=/usr/share/dict/linux.words
+#DICTIONARY=/usr/share/dict/linux.words
+DICTIONARY=~/bin/english.words
 LETTERS=""
 OUTFILE=/tmp/$(date +%y%m%d%H%M%S)
 > ${OUTFILE}
